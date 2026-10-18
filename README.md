@@ -13,6 +13,8 @@ No build step, no dependencies, no API keys. The app is `index.html` plus a smal
 - **Adhan alerts:** choose which of the five prayers play the adhan, and choose the audio files
 - **Offline start:** opens with no internet using the last data it fetched. A month of prayer times is cached, so prayer times and adhan alerts keep working offline
 - **Automatic retry:** any fetch that fails is retried every 5 minutes, and immediately when the iPad comes back online
+- **Themes:** *Boho* (warm cream, terracotta and gold), *Dark boho*, and the original *Midnight*. The default, *Boho (auto)*, switches to Dark boho from **Maghrib until sunrise** using the day's prayer times, and back to the light theme at sunrise
+- Custom fonts: Fraunces for the clock, date and prayer times, Jost for labels. Both are bundled, so there is no internet needed to show them
 - Dims automatically at night, landscape and portrait layouts
 - Plain ES5 JavaScript, so it runs on old Safari
 
@@ -32,13 +34,14 @@ All are free and need no account. The exchange rate is a daily mid-market refere
 | --- | --- |
 | `index.html` | The whole dashboard |
 | `sw.js` | Service worker that makes offline start work |
+| `fonts/` | Fraunces and Jost font files plus their license texts. Upload this whole folder |
 | `adhan.mp3` | *Optional.* Your main adhan recording (see below) |
 | `adhan-fajr.mp3` | *Optional.* A separate Fajr adhan |
 
 ## Hosting on GitHub Pages
 
 1. Create a **public** repository (for example `iPadDashboard`).
-2. Upload `index.html`, `sw.js` and this README to the repository root.
+2. Upload `index.html`, `sw.js`, the `fonts` folder and this README to the repository root. (On github.com choose **Add file → Upload files** and drag the `fonts` folder in as a folder, so the files end up at `fonts/Fraunces.woff2` and so on.)
 3. Go to **Settings → Pages**, set **Source** to **Deploy from a branch**, choose `main` and `/ (root)`, then **Save**.
 4. After a minute or two the site is live at `https://<your-username>.github.io/<repo-name>/`.
 
@@ -65,7 +68,7 @@ The audio is not bundled with this project. Adhan recordings are usually copyrig
 4. Turn each prayer on or off with the buttons at the top. A 🔔 or 🔕 icon on each prayer card shows its setting.
 5. Tap **Test adhan** to check the sound and volume.
 
-The files and your choices are stored only on the iPad and are kept offline. Do this from the Home Screen app, not from Safari, because the two keep separate storage.
+Any common audio file works (mp3, m4a, wav, aac). The file is checked when you pick it, and the panel tells you if the iPad can't play it. If the file is in iCloud Drive, open the Files app first and download it so it is stored on the iPad. The files and your choices are stored only on the iPad and are kept offline. Do this from the Home Screen app, not from Safari, because the two keep separate storage.
 
 **Option B: host the file with the site.** Upload a file named `adhan.mp3` (and optionally `adhan-fajr.mp3`) next to `index.html`. It is used when no file has been chosen on the iPad. Only do this with a recording you are allowed to publish, because the repository is public.
 
@@ -97,6 +100,7 @@ https://<your-username>.github.io/iPadDashboard/?city=Alexandria&lat=31.2001&lon
 | `h12` | off | `1` for a 12-hour clock |
 | `secs` | on | `0` to hide seconds |
 | `prayer` | on | `0` to hide prayer times and adhan |
+| `theme` | `boho` | `boho` (auto day/night), `boho-light`, `boho-dark` or `midnight`. You can also change it in the settings panel |
 | `nightFrom` | `23` | Hour (0–23) when dimming starts |
 | `nightTo` | `6` | Hour (0–23) when dimming ends |
 
@@ -112,6 +116,7 @@ If you change the address after installing, delete the Home Screen icon and add 
 ## Troubleshooting
 
 - **No sound:** tap the screen once, check the iPad volume and the side switch, and use **Test adhan** in the settings. Make sure a sound file is chosen. The pill shows *choose a sound* if none is set.
+- **Can't choose an audio file:** open the dashboard from the Home Screen icon (not Safari), tap the pill in the bottom-left, then **Choose file → Browse**. Files in iCloud Drive must be downloaded first. Any message under the panel title says what went wrong.
 - **Adhan did not play at the prayer time:** check that the prayer is switched on, that you tapped once since the app opened, and that the iPad was awake with the app open.
 - **Wrong prayer times:** check `lat`, `lon`, `tz`, and `method` for your location.
 - **Blank or "Offline" status:** the iPad has no internet, or one of the services is unreachable. Cached data is shown until the connection returns.
@@ -127,6 +132,10 @@ If the iPad is jailbroken (an iPad Air 2 can be, using palera1n), you can serve 
 3. Run `python3 -m http.server 8080 --bind 127.0.0.1 --directory /var/mobile/dashboard`, or set it up as a launch daemon so it starts at boot.
 
 The jailbreak is semi-tethered. After every reboot you need to reconnect to a computer and re-run the jailbreak before the server comes back.
+
+## Fonts and licenses
+
+The bundled fonts are free under the SIL Open Font License 1.1: [Fraunces](https://github.com/undercasetype/Fraunces) and [Jost](https://github.com/indestructible-type/Jost). Keep the `*-OFL.txt` files in `fonts/` when you publish. To use a different font, replace the files in `fonts/` and edit the three `@font-face` lines at the top of `index.html`.
 
 ## Notes
 

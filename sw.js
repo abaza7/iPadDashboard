@@ -3,8 +3,8 @@
 // - Everything else on this site (adhan sound files): cached copy first, refreshed in the background.
 // Data from the weather / prayer / exchange-rate APIs is not handled here (the page caches that itself).
 
-var CACHE = "ipad-dashboard-v2";
-var CORE = ["./", "./index.html"];
+var CACHE = "ipad-dashboard-v3";
+var CORE = ["./", "./index.html", "./fonts/Fraunces.woff2", "./fonts/Fraunces-Italic.woff2", "./fonts/Jost.woff2"];
 var OPTIONAL = ["./adhan.mp3", "./adhan-fajr.mp3"];   // fine if these don't exist
 
 self.addEventListener("install", function (e) {

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="boho-light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -8,14 +8,49 @@
 <meta name="apple-mobile-web-app-title" content="Dashboard">
 <title>Dashboard</title>
 <style>
+  @font-face { font-family: "Fraunces"; src: url(fonts/Fraunces.woff2) format("woff2"); font-weight: 300 700; font-style: normal; font-display: swap; }
+  @font-face { font-family: "Fraunces"; src: url(fonts/Fraunces-Italic.woff2) format("woff2"); font-weight: 300 700; font-style: italic; font-display: swap; }
+  @font-face { font-family: "Jost"; src: url(fonts/Jost.woff2) format("woff2"); font-weight: 300 600; font-style: normal; font-display: swap; }
   :root {
-    --bg: #0b0f14;
-    --fg: #e8eef5;
-    --dim: #7d8a99;
-    --card: #131a22;
-    --accent: #5cc8ff;
-    --warn: #f2b84b;
-    --ok: #2fb36b;
+    /* Midnight (the original look) */
+    --bg: #0b0f14; --fg: #e8eef5; --dim: #7d8a99; --card: #131a22; --accent: #5cc8ff;
+    --next-bg: #0f2431; --next-border: #5cc8ff; --next-name: #5cc8ff; --next-time: #e8eef5; --next-count: #5cc8ff;
+    --warn: #f2b84b; --warn-fg: #1b1303; --ok: #2fb36b; --ok-fg: #04170d;
+    --pri: #5cc8ff; --pri-fg: #04202e;
+    --panel: #161e28; --btn: #263241; --line: #222d3a; --btn-line: #33414f;
+    --overlay: rgba(0, 0, 0, 0.7); --alert-bg: rgba(5, 12, 18, 0.94);
+    --font-ui: -apple-system, "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+    --font-clock: var(--font-ui); --clock-weight: 200;
+    --past-op: 0.45; --night-op: 0.35;
+    --glow: transparent; --glow2: transparent;
+  }
+  /* Boho: warm cream, terracotta, ochre, sage */
+  html[data-theme="boho-light"] {
+    --bg: #f6efe4; --fg: #3b2a20; --dim: #6b5545; --card: #ecdfca; --accent: #9c4a2b;
+    --next-bg: #9a472a; --next-border: #9a472a; --next-name: #fff3e0; --next-time: #fffaf1; --next-count: #fff3e0;
+    --warn: #e0b04a; --warn-fg: #2b1d05; --ok: #6f8a5f; --ok-fg: #0f1a0b;
+    --pri: #9a472a; --pri-fg: #fff8ee;
+    --panel: #f6efe4; --btn: #e6d6bd; --line: #d9c7aa; --btn-line: #c9b392;
+    --overlay: rgba(59, 42, 32, 0.55); --alert-bg: rgba(246, 239, 228, 0.985);
+    --ring1: #d9a441; --ring2: #c8714f; --glow: rgba(217, 164, 65, 0.22); --glow2: rgba(200, 113, 79, 0.12);
+    --ic1: #a56a0a; --ic2: #4a3426; --ic3: #5f7a50;
+    --clock-weight: 400; --past-op: 0.76; --night-op: 0.7;
+  }
+  /* Dark boho: deep brown, cream text, peach and ochre accents */
+  html[data-theme="boho-dark"] {
+    --bg: #231a17; --fg: #f4e8d4; --dim: #c4af97; --card: #34261f; --accent: #eca673;
+    --next-bg: #e3955f; --next-border: #e3955f; --next-name: #2a1810; --next-time: #241209; --next-count: #2a1810;
+    --warn: #e5b45a; --warn-fg: #241705; --ok: #8fae7e; --ok-fg: #0d170a;
+    --pri: #e3955f; --pri-fg: #241209;
+    --panel: #2c211c; --btn: #41322a; --line: #44342b; --btn-line: #5a463a;
+    --overlay: rgba(0, 0, 0, 0.65); --alert-bg: rgba(25, 17, 14, 0.98);
+    --ring1: #d9a441; --ring2: #c8714f; --glow: rgba(217, 164, 65, 0.10); --glow2: rgba(200, 113, 79, 0.10);
+    --ic1: #e8b85a; --ic2: #f4e8d4; --ic3: #a5c494;
+    --clock-weight: 400; --past-op: 0.7; --night-op: 0.6;
+  }
+  html[data-theme^="boho"] {
+    --font-ui: "Jost", Optima, "Avenir Next", Avenir, "Helvetica Neue", Arial, sans-serif;
+    --font-clock: "Fraunces", Baskerville, "Baskerville Old Face", Palatino, "Palatino Linotype", Georgia, serif;
   }
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
@@ -24,12 +59,18 @@
     margin: 0;
     background: var(--bg);
     color: var(--fg);
-    font-family: -apple-system, "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+    font-family: var(--font-ui);
     overflow: hidden;
     -webkit-user-select: none;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
     -webkit-text-size-adjust: 100%;
+  }
+  html[data-theme^="boho"] body {
+    background-image:
+      radial-gradient(circle at 90% 6%, var(--glow), transparent 40%),
+      radial-gradient(circle at 4% 98%, var(--glow2), transparent 36%);
+    background-repeat: no-repeat;
   }
   button {
     font: inherit; color: inherit; border: 0; margin: 0;
@@ -39,10 +80,10 @@
     height: 100%;
     display: flex;
     flex-direction: column;
-    padding: 4vmin 5vmin 7vmin;
+    padding: 4vmin 5vmin 8.5vmin;
     transition: opacity 1s;
   }
-  body.night .wrap { opacity: 0.35; }
+  body.night .wrap { opacity: var(--night-op); }
   body.night .chip, body.night .status { opacity: 0.5; }
 
   /* ---------- top: clock + weather ---------- */
@@ -54,17 +95,19 @@
     min-height: 0;
   }
   .clock {
+    font-family: var(--font-clock);
     font-size: 26vmin;
-    font-weight: 200;
+    font-weight: var(--clock-weight);
     line-height: 1;
     letter-spacing: -0.02em;
-    font-variant-numeric: tabular-nums;
+    font-variant-numeric: lining-nums tabular-nums;
     white-space: nowrap;
   }
-  .clock .sec { font-size: 7vmin; color: var(--dim); margin-left: 1.5vmin; letter-spacing: 0; }
-  .clock .ampm { font-size: 6vmin; color: var(--dim); margin-left: 1.5vmin; letter-spacing: 0; }
-  .date { margin-top: 2vmin; font-size: 4vmin; color: var(--fg); }
-  .hijri { margin-top: 0.8vmin; font-size: 3vmin; color: var(--dim); }
+  .clock .sec { font-family: var(--font-ui); font-size: 7vmin; font-weight: 300; color: var(--dim); margin-left: 1.5vmin; letter-spacing: 0; }
+  .clock .ampm { font-family: var(--font-ui); font-size: 6vmin; font-weight: 300; color: var(--dim); margin-left: 1.5vmin; letter-spacing: 0; }
+  .date { margin-top: 2vmin; font-size: 4vmin; line-height: 1.2; color: var(--fg); }
+  .hijri { margin-top: 0.8vmin; font-size: 3vmin; line-height: 1.2; color: var(--dim); }
+  html[data-theme^="boho"] .date { font-family: var(--font-clock); font-style: italic; font-variant-numeric: lining-nums; }
   .fx {
     display: inline-block;
     margin-top: 2vmin;
@@ -72,17 +115,49 @@
     border-radius: 2vmin;
     background: var(--card);
     font-size: 3.4vmin;
+    line-height: 1.2;
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
   }
+  html[data-theme^="boho"] .fx { border-radius: 6vmin; padding: 1vmin 3vmin; }
   .fx .pair { color: var(--dim); margin-right: 1.4vmin; }
   .fx .chg { color: var(--dim); margin-left: 1.4vmin; font-size: 2.8vmin; }
 
-  .now { text-align: right; }
+  .now { text-align: right; max-width: 44vmin; min-width: 0; }
   .now .icon { font-size: 16vmin; line-height: 1; }
   .now .temp { font-size: 14vmin; font-weight: 200; line-height: 1; margin-top: 1vmin; }
   .now .desc { font-size: 3.6vmin; color: var(--fg); margin-top: 1.2vmin; }
   .now .meta { font-size: 2.8vmin; color: var(--dim); margin-top: 0.8vmin; }
+  /* boho: weather sits in an arch with rainbow-ring outlines */
+  html[data-theme^="boho"] .now {
+    flex: 0 0 auto;
+    width: 41vmin;
+    margin-right: 3.4vmin;
+    padding: 4.6vmin 3vmin 2.2vmin;
+    text-align: center;
+    background: var(--card);
+    border-radius: 999px 999px 3vmin 3vmin;
+    box-shadow: 0 0 0 0.8vmin var(--bg), 0 0 0 1.3vmin var(--ring1), 0 0 0 2.1vmin var(--bg), 0 0 0 2.6vmin var(--ring2);
+  }
+  html[data-theme^="boho"] .now .temp { font-family: var(--font-clock); font-weight: 400; font-size: 9.5vmin; line-height: 0.95; margin-top: 0.4vmin; font-variant-numeric: lining-nums; }
+  html[data-theme^="boho"] .now .desc { font-size: 3.2vmin; margin-top: 1vmin; }
+  html[data-theme^="boho"] .now .meta { font-size: 2.5vmin; margin-top: 0.6vmin; }
+  html[data-theme^="boho"] .top { padding-bottom: 3.4vmin; }
+  html[data-theme^="boho"] .clock { font-size: 23vmin; }
+  html[data-theme^="boho"] .date { margin-top: 1.4vmin; }
+  html[data-theme^="boho"] .now .desc, html[data-theme^="boho"] .now .meta { line-height: 1.25; }
+  html[data-theme^="boho"] .prayers { margin-top: 2.2vmin; }
+  html[data-theme^="boho"] .fx { margin-top: 1.4vmin; }
+  html[data-theme^="boho"] .now .meta span { display: block; }
+  html[data-theme^="boho"] .now .meta .sep { display: none; }
+  .ic { fill: none; stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round; }
+  .ic .c1 { stroke: var(--ic1); }
+  .ic .c2 { stroke: var(--ic2); }
+  .ic .c3 { stroke: var(--ic3); }
+  .ic .cf { fill: var(--card); }
+  .now .icon svg { width: 10.4vmin; height: 10.4vmin; }
+  html[data-theme^="boho"] .now .icon svg { width: 8.6vmin; height: 8.6vmin; }
+  .fc .i svg { width: 5.4vmin; height: 5.4vmin; }
 
   /* ---------- forecast ---------- */
   .forecast { display: flex; margin: 0 -1vmin; }
@@ -94,6 +169,7 @@
     padding: 1.8vmin 1vmin;
     text-align: center;
   }
+  html[data-theme^="boho"] .fc { border-radius: 3.4vmin; border: 1px solid var(--line); padding: 1vmin 1vmin; }
   .fc .d { font-size: 2.6vmin; color: var(--dim); }
   .fc .i { font-size: 6vmin; line-height: 1.3; }
   .fc .t { font-size: 3vmin; }
@@ -111,13 +187,20 @@
     background: var(--card);
     border: 0.3vmin solid transparent;
   }
+  html[data-theme^="boho"] .pr { border-radius: 10vmin 10vmin 2.4vmin 2.4vmin; padding: 4vmin 1vmin 1.5vmin; border: 1px solid var(--line); }
   .pr .n { font-size: 2.8vmin; color: var(--dim); }
-  .pr .t { font-size: 5vmin; font-weight: 300; margin-top: 0.6vmin; font-variant-numeric: tabular-nums; }
-  .pr.next { border-color: var(--accent); background: #0f2431; }
-  .pr.next .n { color: var(--accent); }
-  .pr.past { opacity: 0.45; }
-  .pr .c { font-size: 2.4vmin; color: var(--accent); min-height: 3vmin; margin-top: 0.4vmin; }
+  .pr .t { font-size: 5vmin; font-weight: 300; margin-top: 0.6vmin; font-variant-numeric: lining-nums tabular-nums; }
+  html[data-theme^="boho"] .pr .t { font-family: var(--font-clock); font-weight: 400; }
+  .pr.next { border-color: var(--next-border); background: var(--next-bg); }
+  .pr.next .n { color: var(--next-name); }
+  .pr.next .t { color: var(--next-time); }
+  .pr.past { opacity: var(--past-op); }
+  .pr .t .ap { font-family: var(--font-ui); font-size: 0.5em; font-weight: 400; margin-left: 0.3em; color: var(--dim); letter-spacing: 0.02em; }
+  .pr.next .t .ap { color: var(--next-time); }
+  .pr .c { font-size: 2.4vmin; color: var(--next-count); min-height: 3vmin; margin-top: 0.4vmin; }
   .pr .b { position: absolute; top: 0.8vmin; right: 1vmin; font-size: 2.2vmin; line-height: 1; }
+  html[data-theme^="boho"] .pr .b { top: 1.6vmin; right: auto; left: 50%; margin-left: -1.1vmin; }
+  @media (orientation: portrait) { html[data-theme^="boho"] .pr .b { top: 1.2vmin; } }
 
   /* ---------- corner widgets ---------- */
   .chip {
@@ -128,7 +211,7 @@
     color: var(--dim);
     font-size: 2.4vmin;
   }
-  .chip.warn { color: #1b1303; background: var(--warn); }
+  .chip.warn { color: var(--warn-fg); background: var(--warn); }
   .status {
     position: fixed; right: 3vmin; bottom: 2.6vmin; z-index: 5;
     font-size: 2vmin; color: var(--dim);
@@ -137,31 +220,33 @@
   /* ---------- settings panel ---------- */
   .panel {
     position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 20;
-    background: rgba(0, 0, 0, 0.7);
+    background: var(--overlay);
     display: flex; align-items: center; justify-content: center;
   }
   .card {
     width: 88vw; max-width: 110vmin; max-height: 92vh;
     overflow-y: auto; -webkit-overflow-scrolling: touch;
-    background: #161e28; border-radius: 3vmin; padding: 3vmin 4vmin 4vmin;
+    background: var(--panel); border-radius: 3vmin; padding: 3vmin 4vmin 4vmin;
     font-size: 3vmin;
   }
   .ph { display: flex; justify-content: space-between; align-items: center; font-size: 4.2vmin; font-weight: 600; margin-bottom: 2vmin; }
-  .x { background: #263241; width: 7vmin; height: 7vmin; border-radius: 50%; font-size: 3.4vmin; }
-  .pm { min-height: 3.6vmin; color: var(--warn); font-size: 2.6vmin; margin-bottom: 1vmin; }
+  .x { background: var(--btn); width: 7vmin; height: 7vmin; border-radius: 50%; font-size: 3.4vmin; }
+  .pm { min-height: 3.6vmin; color: var(--accent); font-size: 2.6vmin; margin-bottom: 1vmin; }
   .sec { margin: 3vmin 0 1vmin; color: var(--dim); font-size: 2.6vmin; text-transform: uppercase; letter-spacing: 0.08em; }
   .pills { display: flex; flex-wrap: wrap; margin: 0 -0.8vmin; }
-  .sw { margin: 0.8vmin; padding: 1.8vmin 3.2vmin; border-radius: 6vmin; background: #263241; color: var(--dim); font-size: 3vmin; }
-  .sw.on { background: var(--ok); color: #04170d; font-weight: 600; }
-  .srow { display: flex; justify-content: space-between; align-items: center; padding: 1.6vmin 0; border-bottom: 1px solid #222d3a; }
+  .sw { margin: 0.8vmin; padding: 1.8vmin 3.2vmin; border-radius: 6vmin; background: var(--btn); color: var(--dim); font-size: 3vmin; }
+  .sw.on { background: var(--ok); color: var(--ok-fg); font-weight: 600; }
+  .srow { display: flex; justify-content: space-between; align-items: center; padding: 1.6vmin 0; border-bottom: 1px solid var(--line); }
   .srow .sl { flex: 1 1 auto; min-width: 0; }
   .srow .sl b { display: block; font-weight: 600; }
   .srow .sl small { display: block; color: var(--dim); font-size: 2.3vmin; }
   .srow .sl em { display: block; font-style: normal; color: var(--accent); font-size: 2.6vmin; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .sb { flex: 0 0 auto; margin-left: 2vmin; }
-  .btn { background: #263241; border-radius: 2vmin; padding: 1.6vmin 2.6vmin; font-size: 2.8vmin; margin-left: 1vmin; }
-  .btn.pri { background: var(--accent); color: #04202e; font-weight: 600; }
-  .btn.ghost { background: transparent; border: 1px solid #33414f; }
+  .btn { background: var(--btn); border-radius: 2vmin; padding: 1.6vmin 2.6vmin; font-size: 2.8vmin; margin-left: 1vmin; }
+  .btn.pri { background: var(--pri); color: var(--pri-fg); font-weight: 600; }
+  .btn.ghost { background: transparent; border: 1px solid var(--btn-line); }
+  .filebtn { position: relative; display: inline-block; overflow: hidden; cursor: pointer; }
+  .filebtn .fin { position: absolute; left: 0; top: 0; width: 100%; height: 100%; opacity: 0; font-size: 100px; cursor: pointer; }
   .btns { margin-top: 3vmin; display: flex; flex-wrap: wrap; }
   .btns .btn { margin: 0 1.4vmin 1.4vmin 0; }
   .note { margin-top: 2vmin; color: var(--dim); font-size: 2.3vmin; line-height: 1.4; }
@@ -169,12 +254,12 @@
   /* ---------- adhan alert ---------- */
   .alert {
     position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 30;
-    background: rgba(5, 12, 18, 0.94);
+    background: var(--alert-bg);
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     text-align: center;
   }
   .alert .ai { font-size: 18vmin; line-height: 1; }
-  .alert .an { font-size: 10vmin; font-weight: 300; margin-top: 2vmin; }
+  .alert .an { font-family: var(--font-clock); font-size: 10vmin; font-weight: var(--clock-weight); margin-top: 2vmin; }
   .alert .as { font-size: 3.6vmin; color: var(--dim); margin-top: 1.5vmin; min-height: 4vmin; }
   .alert .btn { margin: 5vmin 0 0; padding: 2.4vmin 7vmin; font-size: 4vmin; }
 
@@ -182,14 +267,26 @@
   @media (orientation: portrait) {
     .top { flex-direction: column; justify-content: center; }
     .clock-block { text-align: center; }
-    .clock { font-size: 20vmin; }
+    .clock, html[data-theme^="boho"] .clock { font-size: 18vmin; }
     .clock .sec { font-size: 6vmin; }
-    .now { text-align: center; margin-top: 4vmin; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; }
+    .now { max-width: none; text-align: center; margin-top: 2.2vmin; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; }
     .now .icon { font-size: 9vmin; margin-right: 3vmin; }
     .now .temp { font-size: 10vmin; margin-top: 0; }
     .now .desc, .now .meta { flex: 0 0 100%; }
+    html[data-theme^="boho"] .now { width: auto; margin-right: 0; padding: 0; border-radius: 0; box-shadow: none; background: none; border: 0; }
+    html[data-theme^="boho"] .now .temp { font-size: 10vmin; }
+    .now .icon svg { width: 10vmin; height: 10vmin; }
+    html[data-theme^="boho"] .top { padding-bottom: 0; }
+    html[data-theme^="boho"] .prayers { margin-top: 3vmin; }
+    html[data-theme^="boho"] .fx { margin-top: 1.2vmin; }
+    html[data-theme^="boho"] .now .meta { font-size: 2.3vmin; }
+    html[data-theme^="boho"] .fc { padding: 0.8vmin 1vmin; }
+    html[data-theme^="boho"] .now .ic .cf { fill: var(--bg); }
+    html[data-theme^="boho"] .now .meta span { display: inline; }
+    html[data-theme^="boho"] .now .meta .sep { display: inline; }
     .prayers { flex-wrap: wrap; }
     .pr { flex: 0 0 calc(33.33% - 1.6vmin); margin-bottom: 1.6vmin; padding: 1.4vmin 1vmin; }
+    html[data-theme^="boho"] .pr { padding: 3.4vmin 1vmin 1.2vmin; }
     .pr .t { font-size: 4.6vmin; }
   }
 </style>
@@ -226,7 +323,6 @@
   <button class="btn pri" id="aBtn" type="button">Stop</button>
 </div>
 
-<input type="file" id="file" accept="audio/*" style="display:none">
 
 <script>
 (function () {
@@ -366,16 +462,59 @@
   }
   function temp(v) { return Math.round(v) + "°"; }
 
+  // ---------- line-art weather icons (boho themes) ----------
+  function rays(cx, cy, r1, r2) {
+    var o = "";
+    for (var i = 0; i < 8; i++) {
+      var a = i * Math.PI / 4, c = Math.cos(a), n = Math.sin(a);
+      o += '<line class="c1" x1="' + (cx + r1 * c).toFixed(1) + '" y1="' + (cy + r1 * n).toFixed(1) +
+        '" x2="' + (cx + r2 * c).toFixed(1) + '" y2="' + (cy + r2 * n).toFixed(1) + '"/>';
+    }
+    return o;
+  }
+  var CLOUD = '<path class="c2" d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/>';
+  var CLOUD_F = CLOUD.replace('class="c2"', 'class="c2 cf"');
+  var SUN = '<circle class="c1" cx="12" cy="12" r="4.4"/>' + rays(12, 12, 7.4, 10);
+  var MOON = '<path class="c1" d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
+  var ICONS = {
+    sun: SUN,
+    moon: MOON,
+    cloud: CLOUD,
+    partly: '<g transform="translate(-1.4 -1.6) scale(.62)">' + SUN + '</g><g transform="translate(5 6.4) scale(.74)">' + CLOUD_F + '</g>',
+    partlyN: '<g transform="translate(-1.2 -1.4) scale(.6)">' + MOON + '</g><g transform="translate(5 6.4) scale(.74)">' + CLOUD_F + '</g>',
+    fog: '<line class="c2" x1="4" y1="8" x2="20" y2="8"/><line class="c3" x1="2.5" y1="12.5" x2="21.5" y2="12.5"/><line class="c2" x1="5" y1="17" x2="19" y2="17"/>',
+    rain: '<path class="c2" d="M20 16.58A5 5 0 0 0 18 7h-1.26A8 8 0 1 0 4 15.25"/>' +
+      '<line class="c3" x1="8" y1="13" x2="8" y2="21"/><line class="c3" x1="12" y1="15" x2="12" y2="23"/><line class="c3" x1="16" y1="13" x2="16" y2="21"/>',
+    snow: '<path class="c2" d="M20 17.58A5 5 0 0 0 18 8h-1.26A8 8 0 1 0 4 16.25"/>' +
+      '<line class="c3" x1="8" y1="16" x2="8.01" y2="16"/><line class="c3" x1="8" y1="20" x2="8.01" y2="20"/><line class="c3" x1="12" y1="18" x2="12.01" y2="18"/>' +
+      '<line class="c3" x1="12" y1="22" x2="12.01" y2="22"/><line class="c3" x1="16" y1="16" x2="16.01" y2="16"/><line class="c3" x1="16" y1="20" x2="16.01" y2="20"/>',
+    storm: '<path class="c2" d="M19 16.9A5 5 0 0 0 18 7h-1.26a8 8 0 1 0-11.62 9"/><polyline class="c1" points="13 11 9 17 15 17 11 23"/>'
+  };
+  function kindOf(code, isDay) {
+    var night = isDay === 0;
+    if (code === 0) return night ? "moon" : "sun";
+    if (code === 1 || code === 2) return night ? "partlyN" : "partly";
+    if (code === 3) return "cloud";
+    if (code === 45 || code === 48) return "fog";
+    if (code >= 95) return "storm";
+    if (code >= 71 && code <= 77) return "snow";
+    if (code >= 51) return "rain";
+    return "cloud";
+  }
+  function iconHTML(code, isDay) {
+    if (document.documentElement.getAttribute("data-theme") === "midnight") return wx(code, isDay).icon;
+    return '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">' + ICONS[kindOf(code, isDay)] + "</svg>";
+  }
+
   function renderWeather(w) {
     if (!w || !w.current) return;
     var c = w.current;
     var info = wx(c.weather_code, c.is_day);
-    $("wIcon").textContent = info.icon;
+    $("wIcon").innerHTML = iconHTML(c.weather_code, c.is_day);
     $("wTemp").textContent = temp(c.temperature_2m) + (CFG.units === "f" ? "F" : "C");
     $("wDesc").textContent = info.text + " · " + CFG.city;
-    $("wMeta").textContent = "Feels " + temp(c.apparent_temperature) + "  ·  Humidity " +
-      Math.round(c.relative_humidity_2m) + "%  ·  Wind " + Math.round(c.wind_speed_10m) +
-      (CFG.units === "f" ? " mph" : " km/h");
+    $("wMeta").innerHTML = "<span>Feels " + temp(c.apparent_temperature) + " \u00B7 Humidity " + Math.round(c.relative_humidity_2m) +
+      '%</span><span class="sep"> \u00B7 </span><span>Wind ' + Math.round(c.wind_speed_10m) + (CFG.units === "f" ? " mph" : " km/h") + "</span>";
 
     var f = $("forecast");
     f.innerHTML = "";
@@ -387,7 +526,7 @@
       var el = document.createElement("div");
       el.className = "fc";
       el.innerHTML = '<div class="d">' + (i === 0 ? "Today" : DAYS[dt.getDay()]) + "</div>" +
-        '<div class="i">' + fi.icon + "</div>" +
+        '<div class="i">' + iconHTML(dly.weather_code[i], 1) + "</div>" +
         '<div class="t">' + temp(dly.temperature_2m_max[i]) + " <span>" + temp(dly.temperature_2m_min[i]) + "</span></div>";
       f.appendChild(el);
     }
@@ -539,8 +678,8 @@
   }
   function fmtHM(d) {
     var h = d.getHours(), ap = "";
-    if (CFG.h12) { ap = h >= 12 ? " PM" : " AM"; h = h % 12 || 12; }
-    return (CFG.h12 ? h : pad(h)) + ":" + pad(d.getMinutes()) + ap;
+    if (CFG.h12) { ap = h >= 12 ? "PM" : "AM"; h = h % 12 || 12; }
+    return (CFG.h12 ? h : pad(h)) + ":" + pad(d.getMinutes()) + (ap ? '<span class="ap">' + ap + "</span>" : "");
   }
 
   function buildPrayer() {
@@ -594,6 +733,29 @@
         p.c.textContent = "";
       }
     }
+  }
+
+  // ---------- themes: Boho switches itself to Dark Boho from Maghrib until sunrise ----------
+  var THEMES = ["boho", "boho-light", "boho-dark", "midnight"];
+  var themePref = THEMES.indexOf(q.theme) >= 0 ? q.theme : (load("theme") || "boho");
+  if (THEMES.indexOf(themePref) < 0) themePref = "boho";
+  var curTheme = "";
+
+  function skyIsDark(now) {
+    var day = prayerDays[dmy(now)];
+    if (day && day.t.Maghrib && day.t.Sunrise) {
+      return now >= atTime(now, day.t.Maghrib) || now < atTime(now, day.t.Sunrise);
+    }
+    return now.getHours() >= 18 || now.getHours() < 6;   // no prayer data yet: rough guess
+  }
+  function applyTheme() {
+    var now = new Date();
+    var t = themePref === "boho" ? (skyIsDark(now) ? "boho-dark" : "boho-light") : themePref;
+    if (t === curTheme) return;
+    curTheme = t;
+    document.documentElement.setAttribute("data-theme", t);
+    var w = load("weather");
+    if (w) renderWeather(w);       // icons differ between Midnight and Boho
   }
 
   // ---------- adhan: settings, stored sound files, audio ----------
@@ -676,9 +838,9 @@
   }
 
   function mimeFor(file) {
-    if (file.type) return file.type;
     var ext = (file.name.split(".").pop() || "").toLowerCase();
-    return { mp3: "audio/mpeg", m4a: "audio/mp4", aac: "audio/aac", wav: "audio/wav", ogg: "audio/ogg" }[ext] || "audio/mpeg";
+    var m = { mp3: "audio/mpeg", mpga: "audio/mpeg", m4a: "audio/mp4", mp4: "audio/mp4", aac: "audio/aac", wav: "audio/wav", caf: "audio/x-caf", ogg: "audio/ogg" }[ext];
+    return m || (file.type === "audio/mp3" ? "audio/mpeg" : file.type) || "audio/mpeg";
   }
 
   // one shared <audio> element: iOS only lets timers start sound on an element a tap has already started
@@ -813,14 +975,13 @@
     chip.className = "chip" + (warn ? " warn" : "");
   }
 
-  var pendingSlot = "main";
-  function panelMsg(m) { var e = $("pmsg"); if (e) e.textContent = m || ""; }
+    function panelMsg(m) { var e = $("pmsg"); if (e) e.textContent = m || ""; }
 
   function soundRow(slot, label, hint) {
     var s = sounds[slot];
     var nm = s ? esc(s.name) + (s.src === "site" ? " (from the site)" : "") : "None";
     return '<div class="srow"><div class="sl"><b>' + label + "</b><small>" + hint + "</small><em>" + nm + "</em></div>" +
-      '<div class="sb"><button class="btn" type="button" data-a="pick" data-s="' + slot + '">Choose file</button>' +
+      '<div class="sb"><label class="btn filebtn">Choose file<input type="file" class="fin" data-s="' + slot + '"></label>' +
       (s && s.src === "device" ? '<button class="btn ghost" type="button" data-a="clear" data-s="' + slot + '">Clear</button>' : "") +
       "</div></div>";
   }
@@ -832,6 +993,10 @@
     ALERTABLE.forEach(function (n) {
       h += '<button class="sw' + (alerts[n] ? " on" : "") + '" type="button" data-a="tog" data-n="' + n + '">' +
         (alerts[n] ? "🔔 " : "🔕 ") + n + "</button>";
+    });
+    h += '</div><div class="sec">Theme</div><div class="pills">';
+    [["boho", "Boho (auto day/night)"], ["boho-light", "Boho light"], ["boho-dark", "Dark boho"], ["midnight", "Midnight"]].forEach(function (th) {
+      h += '<button class="sw' + (themePref === th[0] ? " on" : "") + '" type="button" data-a="theme" data-v="' + th[0] + '">' + th[1] + "</button>";
     });
     h += '</div><div class="sec">Sound</div>' +
       soundRow("main", "Adhan", "Plays for every enabled prayer") +
@@ -857,35 +1022,55 @@
     else if (a === "tog") {
       alerts[n] = !alerts[n]; store("alerts", alerts);
       renderPanel(); renderBells(); updateChip();
+    } else if (a === "theme") {
+      themePref = t.getAttribute("data-v"); store("theme", themePref);
+      curTheme = ""; applyTheme(); renderPanel();
     } else if (a === "test") {
       closePanel(); playAdhan(n, true);
-    } else if (a === "pick") {
-      pendingSlot = s; $("file").value = ""; $("file").click();
     } else if (a === "clear") {
       idbDel(s).catch(function () {}).then(function () { return loadSlot(s); }).then(function () { renderPanel(); updateChip(); });
     }
   });
 
-  $("file").addEventListener("change", function () {
-    var f = this.files && this.files[0];
+  // file chosen with the real <input type="file"> inside each "Choose file" button
+  $("panel").addEventListener("change", function (e) {
+    var inp = e.target;
+    if (!inp || inp.type !== "file") return;
+    var f = inp.files && inp.files[0], slot = inp.getAttribute("data-s");
     if (!f) return;
     if (f.size > 25 * 1024 * 1024) { panelMsg("That file is too large (25 MB max)."); return; }
-    var slot = pendingSlot, fr = new FileReader();
+    if (f.size < 1000) { panelMsg("That file looks empty or isn't audio."); return; }
+    panelMsg("Reading " + f.name + "…");
+    var fr = new FileReader();
     fr.onload = function () {
-      idbPut(slot, { buf: fr.result, type: mimeFor(f), name: f.name })
-        .then(function () { return loadSlot(slot); })
-        .then(function () { renderPanel(); updateChip(); panelMsg("Saved: " + f.name); })
-        .catch(function () { panelMsg("Couldn't save that file on this iPad."); });
+      var type = mimeFor(f), url = URL.createObjectURL(new Blob([fr.result], { type: type })), t = new Audio(), done = false;
+      function finish(ok) {
+        if (done) return; done = true;
+        try { URL.revokeObjectURL(url); } catch (x) {}
+        if (!ok) { panelMsg("This iPad can't play “" + f.name + "”. Use an mp3, m4a or wav file."); return; }
+        idbPut(slot, { buf: fr.result, type: type, name: f.name })
+          .then(function () { return loadSlot(slot); })
+          .then(function () { renderPanel(); updateChip(); panelMsg("Saved: " + f.name); })
+          .catch(function () { panelMsg("Couldn't save that file on this iPad."); });
+      }
+      t.preload = "metadata";
+      t.onloadedmetadata = function () { finish(true); };
+      t.oncanplay = function () { finish(true); };
+      t.onerror = function () { finish(false); };
+      setTimeout(function () { finish(true); }, 4000);   // some builds never fire events for blob audio: save anyway
+      t.src = url;
     };
-    fr.onerror = function () { panelMsg("Couldn't read that file."); };
+    fr.onerror = function () { panelMsg("Couldn't read that file. If it is in iCloud, open the Files app and download it first."); };
     fr.readAsArrayBuffer(f);
   });
 
   // ---------- start-up ----------
+  prunePrayerDays();
+  applyTheme();
   var cw = load("weather"); if (cw) renderWeather(cw);
   var cf = load("fx"); if (cf) renderFX(cf);
-  prunePrayerDays();
   buildPrayer();
+  applyTheme();
   updateChip();
   loadSounds();
 
@@ -895,6 +1080,7 @@
   setInterval(function () {
     var d = new Date();
     renderClock();
+    applyTheme();
     checkAdhan(d);
     if (d.getDate() !== lastDay) {          // new day: rebuild rows from cache, then refresh
       lastDay = d.getDate();
