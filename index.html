@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Dashboard">
+<title>Dashboard</title>
+<style>
+  :root {
+    --bg: #0b0f14;
+    --fg: #e8eef5;
+    --dim: #7d8a99;
+    --card: #131a22;
+    --accent: #5cc8ff;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    height: 100%;
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: -apple-system, "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+    overflow: hidden;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+  }
+  body { transition: opacity 1s; }
+  body.night { opacity: 0.35; }
+
+  .wrap {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 4vmin 5vmin;
+  }
+
+  /* ---------- top: clock + weather ---------- */
+  .top {
+    flex: 1 1 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 0;
+  }
+  .clock {
+    font-size: 26vmin;
+    font-weight: 200;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .clock .sec { font-size: 7vmin; color: var(--dim); margin-left: 1.5vmin; letter-spacing: 0; }
+  .clock .ampm { font-size: 6vmin; color: var(--dim); margin-left: 1.5vmin; letter-spacing: 0; }
+  .date { margin-top: 2vmin; font-size: 4vmin; color: var(--fg); }
+  .hijri { margin-top: 0.8vmin; font-size: 3vmin; color: var(--dim); }
+
+  .now { text-align: right; }
+  .now .icon { font-size: 16vmin; line-height: 1; }
+  .now .temp { font-size: 14vmin; font-weight: 200; line-height: 1; margin-top: 1vmin; }
+  .now .desc { font-size: 3.6vmin; color: var(--fg); margin-top: 1.2vmin; }
+  .now .meta { font-size: 2.8vmin; color: var(--dim); margin-top: 0.8vmin; }
+
+  /* ---------- forecast ---------- */
+  .forecast { display: flex; margin: 0 -1vmin; }
+  .fc {
+    flex: 1 1 0;
+    margin: 0 1vmin;
+    background: var(--card);
+    border-radius: 2.4vmin;
+    padding: 1.8vmin 1vmin;
+    text-align: center;
+  }
+  .fc .d { font-size: 2.6vmin; color: var(--dim); }
+  .fc .i { font-size: 6vmin; line-height: 1.3; }
+  .fc .t { font-size: 3vmin; }
+  .fc .t span { color: var(--dim); }
+
+  /* ---------- prayers ---------- */
+  .prayers { display: flex; margin: 3vmin -0.8vmin 0; }
+  .pr {
+    flex: 1 1 0;
+    margin: 0 0.8vmin;
+    border-radius: 2.4vmin;
+    padding: 2vmin 1vmin;
+    text-align: center;
+    background: var(--card);
+    border: 0.3vmin solid transparent;
+  }
+  .pr .n { font-size: 2.8vmin; color: var(--dim); }
+  .pr .t { font-size: 5vmin; font-weight: 300; margin-top: 0.6vmin; font-variant-numeric: tabular-nums; }
+  .pr.next { border-color: var(--accent); background: #0f2431; }
+  .pr.next .n { color: var(--accent); }
+  .pr.past { opacity: 0.45; }
+  .pr .c { font-size: 2.4vmin; color: var(--accent); min-height: 3vmin; margin-top: 0.4vmin; }
+
+  .status {
+    position: fixed; right: 2vmin; bottom: 1vmin;
+    font-size: 1.8vmin; color: var(--dim);
+  }
+
+  /* ---------- portrait ---------- */
+  @media (orientation: portrait) {
+    .top { flex-direction: column; justify-content: center; }
+    .now { text-align: center; margin-top: 5vmin; }
+    .clock { font-size: 24vmin; }
+    .clock-block { text-align: center; }
+    .prayers { flex-wrap: wrap; }
+    .pr { flex: 0 0 calc(33.33% - 1.6vmin); margin-bottom: 1.6vmin; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="clock-block">
+      <div class="clock" id="clock">--:--</div>
+      <div class="date" id="date"></div>
+      <div class="hijri" id="hijri"></div>
+    </div>
+    <div class="now">
+      <div class="icon" id="wIcon"></div>
+      <div class="temp" id="wTemp">--</div>
+      <div class="desc" id="wDesc"></div>
+      <div class="meta" id="wMeta"></div>
+    </div>
+  </div>
+  <div class="forecast" id="forecast"></div>
+  <div class="prayers" id="prayers"></div>
+</div>
+<div class="status" id="status"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---------- config (override with URL params, e.g. ?city=Alexandria&lat=31.2&lon=29.95) ----------
+  var q = {};
+  location.search.replace(/^\?/, "").split("&").forEach(function (kv) {
+    if (!kv) return;
+    var p = kv.split("=");
+    q[decodeURIComponent(p[0])] = decodeURIComponent((p[1] || "").replace(/\+/g, " "));
+  });
+  var CFG = {
+    city:   q.city   || "Cairo",
+    lat:    q.lat    || "30.0444",
+    lon:    q.lon    || "31.2357",
+    tz:     q.tz     || "Africa/Cairo",
+    method: q.method || "5",            // 5 = Egyptian General Authority of Survey
+    units:  q.units  || "c",            // c or f
+    h12:    q.h12 === "1",              // 12-hour clock
+    secs:   q.secs !== "0",             // show seconds
+    prayer: q.prayer !== "0",           // show prayer row
+    nightFrom: parseInt(q.nightFrom || "23", 10),
+    nightTo:   parseInt(q.nightTo   || "6", 10)
+  };
+
+  var $ = function (id) { return document.getElementById(id); };
+  var pad = function (n) { return n < 10 ? "0" + n : "" + n; };
+  var DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  var DAYS_LONG = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  var MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+  function store(k, v) { try { localStorage.setItem("dash_" + k, JSON.stringify(v)); } catch (e) {} }
+  function load(k) { try { return JSON.parse(localStorage.getItem("dash_" + k)); } catch (e) { return null; } }
+
+  function getJSON(url) {
+    return fetch(url).then(function (r) {
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return r.json();
+    });
+  }
+
+  // ---------- clock ----------
+  function renderClock() {
+    var d = new Date();
+    var h = d.getHours(), ap = "";
+    if (CFG.h12) { ap = h >= 12 ? "PM" : "AM"; h = h % 12 || 12; }
+    var html = (CFG.h12 ? h : pad(h)) + ":" + pad(d.getMinutes());
+    if (CFG.secs) html += '<span class="sec">' + pad(d.getSeconds()) + "</span>";
+    if (CFG.h12) html += '<span class="ampm">' + ap + "</span>";
+    $("clock").innerHTML = html;
+    $("date").textContent = DAYS_LONG[d.getDay()] + ", " + d.getDate() + " " + MONTHS[d.getMonth()] + " " + d.getFullYear();
+
+    var hr = d.getHours();
+    var night = CFG.nightFrom > CFG.nightTo
+      ? (hr >= CFG.nightFrom || hr < CFG.nightTo)
+      : (hr >= CFG.nightFrom && hr < CFG.nightTo);
+    document.body.className = night ? "night" : "";
+  }
+
+  // ---------- weather (Open-Meteo, no API key) ----------
+  var WX = {
+    0: ["Clear", "☀️", "🌙"], 1: ["Mostly clear", "🌤️", "🌙"], 2: ["Partly cloudy", "⛅", "☁️"],
+    3: ["Overcast", "☁️", "☁️"], 45: ["Fog", "🌫️", "🌫️"], 48: ["Rime fog", "🌫️", "🌫️"],
+    51: ["Light drizzle", "🌦️", "🌧️"], 53: ["Drizzle", "🌦️", "🌧️"], 55: ["Heavy drizzle", "🌧️", "🌧️"],
+    61: ["Light rain", "🌦️", "🌧️"], 63: ["Rain", "🌧️", "🌧️"], 65: ["Heavy rain", "🌧️", "🌧️"],
+    71: ["Light snow", "🌨️", "🌨️"], 73: ["Snow", "❄️", "❄️"], 75: ["Heavy snow", "❄️", "❄️"],
+    80: ["Showers", "🌦️", "🌧️"], 81: ["Showers", "🌧️", "🌧️"], 82: ["Heavy showers", "⛈️", "⛈️"],
+    95: ["Thunderstorm", "⛈️", "⛈️"], 96: ["Thunderstorm", "⛈️", "⛈️"], 99: ["Thunderstorm", "⛈️", "⛈️"]
+  };
+  function wx(code, isDay) {
+    var e = WX[code];
+    if (!e) { // fall back to nearest known bucket
+      if (code >= 95) e = WX[95]; else if (code >= 80) e = WX[81]; else if (code >= 71) e = WX[73];
+      else if (code >= 61) e = WX[63]; else if (code >= 51) e = WX[53]; else e = WX[3];
+    }
+    return { text: e[0], icon: isDay === 0 ? e[2] : e[1] };
+  }
+  function temp(v) { return Math.round(v) + "°"; }
+
+  function renderWeather(w) {
+    if (!w || !w.current) return;
+    var c = w.current;
+    var info = wx(c.weather_code, c.is_day);
+    $("wIcon").textContent = info.icon;
+    $("wTemp").textContent = temp(c.temperature_2m) + (CFG.units === "f" ? "F" : "C");
+    $("wDesc").textContent = info.text + " · " + CFG.city;
+    $("wMeta").textContent = "Feels " + temp(c.apparent_temperature) + "  ·  Humidity " +
+      Math.round(c.relative_humidity_2m) + "%  ·  Wind " + Math.round(c.wind_speed_10m) +
+      (CFG.units === "f" ? " mph" : " km/h");
+
+    var f = $("forecast");
+    f.innerHTML = "";
+    var dly = w.daily;
+    for (var i = 0; i < dly.time.length && i < 5; i++) {
+      var p = dly.time[i].split("-");
+      var dt = new Date(+p[0], +p[1] - 1, +p[2]);
+      var fi = wx(dly.weather_code[i], 1);
+      var el = document.createElement("div");
+      el.className = "fc";
+      el.innerHTML = '<div class="d">' + (i === 0 ? "Today" : DAYS[dt.getDay()]) + "</div>" +
+        '<div class="i">' + fi.icon + "</div>" +
+        '<div class="t">' + temp(dly.temperature_2m_max[i]) + " <span>" + temp(dly.temperature_2m_min[i]) + "</span></div>";
+      f.appendChild(el);
+    }
+  }
+
+  function fetchWeather() {
+    var url = "https://api.open-meteo.com/v1/forecast?latitude=" + CFG.lat + "&longitude=" + CFG.lon +
+      "&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m,is_day" +
+      "&daily=weather_code,temperature_2m_max,temperature_2m_min" +
+      "&forecast_days=5&timezone=auto" +
+      (CFG.units === "f" ? "&temperature_unit=fahrenheit&wind_speed_unit=mph" : "");
+    return getJSON(url).then(function (w) { store("weather", w); renderWeather(w); });
+  }
+
+  // ---------- prayer times (Aladhan, no API key) ----------
+  var PRAYER_NAMES = ["Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"];
+  var prayerData = null; // { today: {...}, tomorrow: {...}, hijri: "..." , dateKey: "..." }
+  var prayerEls = [];
+
+  function dmy(d) { return pad(d.getDate()) + "-" + pad(d.getMonth() + 1) + "-" + d.getFullYear(); }
+
+  function fetchTimings(d) {
+    var url = "https://api.aladhan.com/v1/timings/" + dmy(d) +
+      "?latitude=" + CFG.lat + "&longitude=" + CFG.lon +
+      "&method=" + CFG.method + "&timezonestring=" + encodeURIComponent(CFG.tz);
+    return getJSON(url).then(function (r) { return r.data; });
+  }
+
+  function fetchPrayer() {
+    var now = new Date();
+    var tom = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    return Promise.all([fetchTimings(now), fetchTimings(tom)]).then(function (res) {
+      var h = res[0].date && res[0].date.hijri;
+      prayerData = {
+        dateKey: dmy(now),
+        today: res[0].timings,
+        tomorrow: res[1].timings,
+        hijri: h ? (h.day + " " + h.month.en + " " + h.year + " AH") : ""
+      };
+      store("prayer", prayerData);
+      buildPrayer();
+    });
+  }
+
+  function atTime(base, str) {
+    var m = /(\d{1,2}):(\d{2})/.exec(str);
+    return new Date(base.getFullYear(), base.getMonth(), base.getDate(), +m[1], +m[2], 0);
+  }
+  function fmtHM(d) {
+    var h = d.getHours(), ap = "";
+    if (CFG.h12) { ap = h >= 12 ? " PM" : " AM"; h = h % 12 || 12; }
+    return (CFG.h12 ? h : pad(h)) + ":" + pad(d.getMinutes()) + ap;
+  }
+
+  function buildPrayer() {
+    if (!CFG.prayer || !prayerData) return;
+    $("hijri").textContent = prayerData.hijri;
+    var box = $("prayers");
+    box.innerHTML = "";
+    prayerEls = [];
+    var now = new Date();
+    PRAYER_NAMES.forEach(function (name) {
+      var t = atTime(now, prayerData.today[name]);
+      var el = document.createElement("div");
+      el.className = "pr";
+      el.innerHTML = '<div class="n">' + name + '</div><div class="t">' + fmtHM(t) + '</div><div class="c"></div>';
+      box.appendChild(el);
+      prayerEls.push({ el: el, name: name, time: t, c: el.querySelector(".c") });
+    });
+    tickPrayer();
+  }
+
+  function tickPrayer() {
+    if (!CFG.prayer || !prayerData || !prayerEls.length) return;
+    var now = new Date();
+    var nextIdx = -1;
+    for (var i = 0; i < prayerEls.length; i++) {
+      if (prayerEls[i].time > now) { nextIdx = i; break; }
+    }
+    var nextTime = null;
+    if (nextIdx === -1) { // all done today -> tomorrow's Fajr
+      var tom = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+      nextTime = atTime(tom, prayerData.tomorrow.Fajr);
+      nextIdx = 0;
+    }
+    for (var j = 0; j < prayerEls.length; j++) {
+      var p = prayerEls[j];
+      var cls = "pr";
+      if (j === nextIdx) cls += " next";
+      else if (p.time <= now) cls += " past";
+      p.el.className = cls;
+      if (j === nextIdx) {
+        var target = nextTime || p.time;
+        var mins = Math.max(0, Math.round((target - now) / 60000));
+        p.c.textContent = "in " + (mins >= 60 ? Math.floor(mins / 60) + "h " : "") + (mins % 60) + "m";
+      } else {
+        p.c.textContent = "";
+      }
+    }
+  }
+
+  // ---------- refresh loop ----------
+  function setStatus(msg) { $("status").textContent = msg || ""; }
+
+  function refresh() {
+    var jobs = [fetchWeather()];
+    if (CFG.prayer) jobs.push(fetchPrayer());
+    Promise.all(jobs).then(function () {
+      var d = new Date();
+      setStatus("Updated " + pad(d.getHours()) + ":" + pad(d.getMinutes()));
+    }).catch(function () {
+      setStatus("Offline – showing last data");
+    });
+  }
+
+  // show cached data immediately, then refresh
+  var cw = load("weather"); if (cw) renderWeather(cw);
+  var cp = load("prayer");
+  if (cp && CFG.prayer && cp.dateKey === dmy(new Date())) { prayerData = cp; buildPrayer(); }
+
+  renderClock();
+  setInterval(renderClock, 1000);
+  setInterval(tickPrayer, 15000);
+  refresh();
+  setInterval(refresh, 30 * 60 * 1000);
+
+  // new day -> rebuild prayer rows; reload page at ~04:00 to keep memory fresh
+  var lastDay = new Date().getDate();
+  setInterval(function () {
+    var d = new Date();
+    if (d.getDate() !== lastDay) { lastDay = d.getDate(); refresh(); }
+    if (d.getHours() === 4 && d.getMinutes() === 0 && d.getSeconds() < 2) location.reload();
+  }, 1000);
+})();
+</script>
+</body>
+</html>
