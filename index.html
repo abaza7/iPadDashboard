@@ -14,8 +14,11 @@
     --dim: #7d8a99;
     --card: #131a22;
     --accent: #5cc8ff;
+    --warn: #f2b84b;
+    --ok: #2fb36b;
   }
   * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
   html, body {
     height: 100%;
     margin: 0;
@@ -28,15 +31,19 @@
     -webkit-tap-highlight-color: transparent;
     -webkit-text-size-adjust: 100%;
   }
-  body { transition: opacity 1s; }
-  body.night { opacity: 0.35; }
-
+  button {
+    font: inherit; color: inherit; border: 0; margin: 0;
+    -webkit-appearance: none; appearance: none; cursor: pointer;
+  }
   .wrap {
     height: 100%;
     display: flex;
     flex-direction: column;
-    padding: 4vmin 5vmin;
+    padding: 4vmin 5vmin 7vmin;
+    transition: opacity 1s;
   }
+  body.night .wrap { opacity: 0.35; }
+  body.night .chip, body.night .status { opacity: 0.5; }
 
   /* ---------- top: clock + weather ---------- */
   .top {
@@ -58,6 +65,18 @@
   .clock .ampm { font-size: 6vmin; color: var(--dim); margin-left: 1.5vmin; letter-spacing: 0; }
   .date { margin-top: 2vmin; font-size: 4vmin; color: var(--fg); }
   .hijri { margin-top: 0.8vmin; font-size: 3vmin; color: var(--dim); }
+  .fx {
+    display: inline-block;
+    margin-top: 2vmin;
+    padding: 1vmin 2.2vmin;
+    border-radius: 2vmin;
+    background: var(--card);
+    font-size: 3.4vmin;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .fx .pair { color: var(--dim); margin-right: 1.4vmin; }
+  .fx .chg { color: var(--dim); margin-left: 1.4vmin; font-size: 2.8vmin; }
 
   .now { text-align: right; }
   .now .icon { font-size: 16vmin; line-height: 1; }
@@ -83,6 +102,7 @@
   /* ---------- prayers ---------- */
   .prayers { display: flex; margin: 3vmin -0.8vmin 0; }
   .pr {
+    position: relative;
     flex: 1 1 0;
     margin: 0 0.8vmin;
     border-radius: 2.4vmin;
@@ -97,20 +117,80 @@
   .pr.next .n { color: var(--accent); }
   .pr.past { opacity: 0.45; }
   .pr .c { font-size: 2.4vmin; color: var(--accent); min-height: 3vmin; margin-top: 0.4vmin; }
+  .pr .b { position: absolute; top: 0.8vmin; right: 1vmin; font-size: 2.2vmin; line-height: 1; }
 
-  .status {
-    position: fixed; right: 2vmin; bottom: 1vmin;
-    font-size: 1.8vmin; color: var(--dim);
+  /* ---------- corner widgets ---------- */
+  .chip {
+    position: fixed; left: 3vmin; bottom: 2vmin; z-index: 5;
+    padding: 1.1vmin 2.2vmin;
+    border-radius: 3vmin;
+    background: var(--card);
+    color: var(--dim);
+    font-size: 2.4vmin;
   }
+  .chip.warn { color: #1b1303; background: var(--warn); }
+  .status {
+    position: fixed; right: 3vmin; bottom: 2.6vmin; z-index: 5;
+    font-size: 2vmin; color: var(--dim);
+  }
+
+  /* ---------- settings panel ---------- */
+  .panel {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 20;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .card {
+    width: 88vw; max-width: 110vmin; max-height: 92vh;
+    overflow-y: auto; -webkit-overflow-scrolling: touch;
+    background: #161e28; border-radius: 3vmin; padding: 3vmin 4vmin 4vmin;
+    font-size: 3vmin;
+  }
+  .ph { display: flex; justify-content: space-between; align-items: center; font-size: 4.2vmin; font-weight: 600; margin-bottom: 2vmin; }
+  .x { background: #263241; width: 7vmin; height: 7vmin; border-radius: 50%; font-size: 3.4vmin; }
+  .pm { min-height: 3.6vmin; color: var(--warn); font-size: 2.6vmin; margin-bottom: 1vmin; }
+  .sec { margin: 3vmin 0 1vmin; color: var(--dim); font-size: 2.6vmin; text-transform: uppercase; letter-spacing: 0.08em; }
+  .pills { display: flex; flex-wrap: wrap; margin: 0 -0.8vmin; }
+  .sw { margin: 0.8vmin; padding: 1.8vmin 3.2vmin; border-radius: 6vmin; background: #263241; color: var(--dim); font-size: 3vmin; }
+  .sw.on { background: var(--ok); color: #04170d; font-weight: 600; }
+  .srow { display: flex; justify-content: space-between; align-items: center; padding: 1.6vmin 0; border-bottom: 1px solid #222d3a; }
+  .srow .sl { flex: 1 1 auto; min-width: 0; }
+  .srow .sl b { display: block; font-weight: 600; }
+  .srow .sl small { display: block; color: var(--dim); font-size: 2.3vmin; }
+  .srow .sl em { display: block; font-style: normal; color: var(--accent); font-size: 2.6vmin; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sb { flex: 0 0 auto; margin-left: 2vmin; }
+  .btn { background: #263241; border-radius: 2vmin; padding: 1.6vmin 2.6vmin; font-size: 2.8vmin; margin-left: 1vmin; }
+  .btn.pri { background: var(--accent); color: #04202e; font-weight: 600; }
+  .btn.ghost { background: transparent; border: 1px solid #33414f; }
+  .btns { margin-top: 3vmin; display: flex; flex-wrap: wrap; }
+  .btns .btn { margin: 0 1.4vmin 1.4vmin 0; }
+  .note { margin-top: 2vmin; color: var(--dim); font-size: 2.3vmin; line-height: 1.4; }
+
+  /* ---------- adhan alert ---------- */
+  .alert {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 30;
+    background: rgba(5, 12, 18, 0.94);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center;
+  }
+  .alert .ai { font-size: 18vmin; line-height: 1; }
+  .alert .an { font-size: 10vmin; font-weight: 300; margin-top: 2vmin; }
+  .alert .as { font-size: 3.6vmin; color: var(--dim); margin-top: 1.5vmin; min-height: 4vmin; }
+  .alert .btn { margin: 5vmin 0 0; padding: 2.4vmin 7vmin; font-size: 4vmin; }
 
   /* ---------- portrait ---------- */
   @media (orientation: portrait) {
     .top { flex-direction: column; justify-content: center; }
-    .now { text-align: center; margin-top: 5vmin; }
-    .clock { font-size: 24vmin; }
     .clock-block { text-align: center; }
+    .clock { font-size: 20vmin; }
+    .clock .sec { font-size: 6vmin; }
+    .now { text-align: center; margin-top: 4vmin; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; }
+    .now .icon { font-size: 9vmin; margin-right: 3vmin; }
+    .now .temp { font-size: 10vmin; margin-top: 0; }
+    .now .desc, .now .meta { flex: 0 0 100%; }
     .prayers { flex-wrap: wrap; }
-    .pr { flex: 0 0 calc(33.33% - 1.6vmin); margin-bottom: 1.6vmin; }
+    .pr { flex: 0 0 calc(33.33% - 1.6vmin); margin-bottom: 1.6vmin; padding: 1.4vmin 1vmin; }
+    .pr .t { font-size: 4.6vmin; }
   }
 </style>
 </head>
@@ -121,6 +201,7 @@
       <div class="clock" id="clock">--:--</div>
       <div class="date" id="date"></div>
       <div class="hijri" id="hijri"></div>
+      <div class="fx" id="fx" hidden></div>
     </div>
     <div class="now">
       <div class="icon" id="wIcon"></div>
@@ -132,7 +213,20 @@
   <div class="forecast" id="forecast"></div>
   <div class="prayers" id="prayers"></div>
 </div>
+
+<button class="chip" id="chip" type="button"></button>
 <div class="status" id="status"></div>
+
+<div class="panel" id="panel" hidden><div class="card" id="card"></div></div>
+
+<div class="alert" id="alert" hidden>
+  <div class="ai">&#128332;</div>
+  <div class="an" id="aName"></div>
+  <div class="as" id="aSub"></div>
+  <button class="btn pri" id="aBtn" type="button">Stop</button>
+</div>
+
+<input type="file" id="file" accept="audio/*" style="display:none">
 
 <script>
 (function () {
@@ -155,9 +249,17 @@
     h12:    q.h12 === "1",              // 12-hour clock
     secs:   q.secs !== "0",             // show seconds
     prayer: q.prayer !== "0",           // show prayer row
+    fx:     q.fx !== "0",               // show exchange rate
+    from:   (q.from || "USD").toUpperCase(),
+    to:     (q.to   || "EGP").toUpperCase(),
     nightFrom: parseInt(q.nightFrom || "23", 10),
     nightTo:   parseInt(q.nightTo   || "6", 10)
   };
+
+  var RETRY_MS = 5 * 60 * 1000;         // retry failed fetches every 5 minutes
+  var ALERTABLE = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"];
+  var PRAYER_NAMES = ["Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"];
+  var ADHAN_WINDOW_MS = 2 * 60 * 1000;  // still play if we notice up to 2 min late
 
   var $ = function (id) { return document.getElementById(id); };
   var pad = function (n) { return n < 10 ? "0" + n : "" + n; };
@@ -167,13 +269,64 @@
 
   function store(k, v) { try { localStorage.setItem("dash_" + k, JSON.stringify(v)); } catch (e) {} }
   function load(k) { try { return JSON.parse(localStorage.getItem("dash_" + k)); } catch (e) { return null; } }
-
-  function getJSON(url) {
-    return fetch(url).then(function (r) {
-      if (!r.ok) throw new Error("HTTP " + r.status);
-      return r.json();
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
     });
   }
+  function dmy(d) { return pad(d.getDate()) + "-" + pad(d.getMonth() + 1) + "-" + d.getFullYear(); }
+  function hhmm(d) { return pad(d.getHours()) + ":" + pad(d.getMinutes()); }
+
+  function getJSON(url) {
+    return new Promise(function (resolve, reject) {
+      var done = false;
+      var t = setTimeout(function () { if (!done) { done = true; reject(new Error("timeout")); } }, 15000);
+      fetch(url).then(function (r) {
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        return r.json();
+      }).then(function (j) {
+        if (!done) { done = true; clearTimeout(t); resolve(j); }
+      }, function (e) {
+        if (!done) { done = true; clearTimeout(t); reject(e); }
+      });
+    });
+  }
+
+  // ---------- background jobs: refresh on success, retry every 5 min on failure ----------
+  var jobs = [];
+  function addJob(label, fn, okMs) {
+    var j = { label: label, fn: fn, okMs: okMs, timer: null, failing: false, running: false };
+    j.run = function () {
+      if (j.running) return;
+      clearTimeout(j.timer);
+      j.running = true;
+      var p;
+      try { p = fn(); } catch (e) { p = Promise.reject(e); }
+      p.then(function () {
+        j.failing = false; j.running = false;
+        j.timer = setTimeout(j.run, j.okMs);
+        updateStatus();
+      }, function () {
+        j.failing = true; j.running = false;
+        j.timer = setTimeout(j.run, RETRY_MS);
+        updateStatus();
+      });
+    };
+    jobs.push(j);
+    return j;
+  }
+  function updateStatus() {
+    var bad = [];
+    jobs.forEach(function (j) { if (j.failing) bad.push(j.label); });
+    $("status").textContent = bad.length
+      ? "Offline: " + bad.join(", ") + " – retrying every 5 min"
+      : "Updated " + hhmm(new Date());
+  }
+  function retryFailedNow() {
+    jobs.forEach(function (j) { if (j.failing) j.run(); });
+  }
+  window.addEventListener("online", retryFailedNow);
+  document.addEventListener("visibilitychange", function () { if (!document.hidden) retryFailedNow(); });
 
   // ---------- clock ----------
   function renderClock() {
@@ -205,7 +358,7 @@
   };
   function wx(code, isDay) {
     var e = WX[code];
-    if (!e) { // fall back to nearest known bucket
+    if (!e) {
       if (code >= 95) e = WX[95]; else if (code >= 80) e = WX[81]; else if (code >= 71) e = WX[73];
       else if (code >= 61) e = WX[63]; else if (code >= 51) e = WX[53]; else e = WX[3];
     }
@@ -246,35 +399,136 @@
       "&daily=weather_code,temperature_2m_max,temperature_2m_min" +
       "&forecast_days=5&timezone=auto" +
       (CFG.units === "f" ? "&temperature_unit=fahrenheit&wind_speed_unit=mph" : "");
-    return getJSON(url).then(function (w) { store("weather", w); renderWeather(w); });
+    return getJSON(url).then(function (w) {
+      if (!w || !w.current || !w.daily) throw new Error("bad weather");
+      store("weather", w); renderWeather(w);
+    });
   }
 
-  // ---------- prayer times (Aladhan, no API key) ----------
-  var PRAYER_NAMES = ["Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"];
-  var prayerData = null; // { today: {...}, tomorrow: {...}, hijri: "..." , dateKey: "..." }
+  // ---------- exchange rate (free, no key; daily reference rate) ----------
+  function renderFX(fx) {
+    var el = $("fx");
+    if (!CFG.fx || !fx || !(fx.rate > 0)) { el.hidden = true; return; }
+    var html = '<span class="pair">' + esc(fx.from) + "/" + esc(fx.to) + "</span>" + fx.rate.toFixed(2);
+    if (typeof fx.prev === "number") {
+      var diff = fx.rate - fx.prev;
+      var arrow = diff > 0.004 ? "▲" : (diff < -0.004 ? "▼" : "–");
+      html += '<span class="chg">' + arrow + " " + Math.abs(diff).toFixed(2) + "</span>";
+    }
+    el.innerHTML = html;
+    el.hidden = false;
+  }
+
+  function fetchFX() {
+    if (!CFG.fx) return Promise.resolve();
+    var f = CFG.from.toLowerCase(), t = CFG.to.toLowerCase();
+    var jsd = "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@";
+    function pick(j) {
+      var rate = j && j[f] && j[f][t];
+      if (typeof rate !== "number" || !(rate > 0)) throw new Error("bad rate");
+      return { rate: rate, date: j.date || null };
+    }
+    function latest() {
+      return getJSON(jsd + "latest/v1/currencies/" + f + ".json").then(pick)
+        .catch(function () {
+          return getJSON("https://latest.currency-api.pages.dev/v1/currencies/" + f + ".json").then(pick);
+        })
+        .catch(function () {
+          return getJSON("https://open.er-api.com/v6/latest/" + CFG.from).then(function (j) {
+            var r = j && j.rates && j.rates[CFG.to];
+            if (typeof r !== "number" || !(r > 0)) throw new Error("bad rate");
+            return { rate: r, date: null };
+          });
+        });
+    }
+    return latest().then(function (cur) {
+      if (!cur.date) return cur;
+      var d = new Date(cur.date + "T00:00:00Z");
+      d.setUTCDate(d.getUTCDate() - 1);
+      var ds = d.getUTCFullYear() + "-" + pad(d.getUTCMonth() + 1) + "-" + pad(d.getUTCDate());
+      return getJSON(jsd + ds + "/v1/currencies/" + f + ".json").then(function (p) {
+        try { cur.prev = pick(p).rate; } catch (e) {}
+        return cur;
+      }).catch(function () { return cur; });
+    }).then(function (fx) {
+      fx.from = CFG.from; fx.to = CFG.to;
+      store("fx", fx);
+      renderFX(fx);
+    });
+  }
+
+  // ---------- prayer times (Aladhan monthly calendar, cached for offline use) ----------
+  var prayerDays = load("pdays") || {};   // "DD-MM-YYYY" -> { t: {Fajr:"HH:MM",...}, h: "hijri text" }
   var prayerEls = [];
 
-  function dmy(d) { return pad(d.getDate()) + "-" + pad(d.getMonth() + 1) + "-" + d.getFullYear(); }
+  function prunePrayerDays() {
+    var cut = new Date();
+    cut.setDate(cut.getDate() - 2);
+    Object.keys(prayerDays).forEach(function (k) {
+      var p = k.split("-");
+      if (new Date(+p[2], +p[1] - 1, +p[0]).getTime() < cut.getTime()) delete prayerDays[k];
+    });
+  }
 
-  function fetchTimings(d) {
-    var url = "https://api.aladhan.com/v1/timings/" + dmy(d) +
-      "?latitude=" + CFG.lat + "&longitude=" + CFG.lon +
-      "&method=" + CFG.method + "&timezonestring=" + encodeURIComponent(CFG.tz);
-    return getJSON(url).then(function (r) { return r.data; });
+  function parseDay(d) {
+    var g = d && d.date && d.date.gregorian && d.date.gregorian.date;
+    if (!g || !d.timings) return null;
+    var t = {}, n = 0;
+    PRAYER_NAMES.forEach(function (name) {
+      var m = /(\d{1,2}):(\d{2})/.exec(d.timings[name] || "");
+      if (m) { t[name] = pad(+m[1]) + ":" + m[2]; n++; }
+    });
+    if (n < PRAYER_NAMES.length) return null;
+    var h = d.date.hijri, htxt = "";
+    if (h && h.month) htxt = parseInt(h.day, 10) + " " + (h.month.en || "") + " " + h.year + " AH";
+    return { key: g, val: { t: t, h: htxt } };
+  }
+
+  function prayerParams() {
+    return "latitude=" + CFG.lat + "&longitude=" + CFG.lon + "&method=" + CFG.method +
+      "&timezonestring=" + encodeURIComponent(CFG.tz);
+  }
+
+  function fetchMonth(y, m) {
+    return getJSON("https://api.aladhan.com/v1/calendar/" + y + "/" + m + "?" + prayerParams()).then(function (r) {
+      var out = {}, n = 0;
+      (r && r.data || []).forEach(function (d) {
+        var p = parseDay(d);
+        if (p) { out[p.key] = p.val; n++; }
+      });
+      if (!n) throw new Error("bad calendar");
+      return out;
+    });
+  }
+
+  function fetchOneDay(d) {
+    return getJSON("https://api.aladhan.com/v1/timings/" + dmy(d) + "?" + prayerParams()).then(function (r) {
+      var p = parseDay(r && r.data && { timings: r.data.timings, date: r.data.date });
+      if (!p) throw new Error("bad day");
+      var o = {}; o[p.key] = p.val; return o;
+    });
   }
 
   function fetchPrayer() {
     var now = new Date();
-    var tom = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-    return Promise.all([fetchTimings(now), fetchTimings(tom)]).then(function (res) {
-      var h = res[0].date && res[0].date.hijri;
-      prayerData = {
-        dateKey: dmy(now),
-        today: res[0].timings,
-        tomorrow: res[1].timings,
-        hijri: h ? (h.day + " " + h.month.en + " " + h.year + " AH") : ""
-      };
-      store("prayer", prayerData);
+    var y = now.getFullYear(), m = now.getMonth() + 1;
+    var ny = m === 12 ? y + 1 : y, nm = m === 12 ? 1 : m + 1;
+    var cur = fetchMonth(y, m).catch(function () {
+      // fall back to just today + tomorrow if the monthly endpoint misbehaves
+      var tom = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+      return Promise.all([fetchOneDay(now), fetchOneDay(tom)]).then(function (a) {
+        var o = {}; Object.keys(a[0]).forEach(function (k) { o[k] = a[0][k]; });
+        Object.keys(a[1]).forEach(function (k) { o[k] = a[1][k]; });
+        return o;
+      });
+    });
+    var next = fetchMonth(ny, nm).catch(function () { return {}; });
+    return Promise.all([cur, next]).then(function (res) {
+      [res[0], res[1]].forEach(function (mo) {
+        Object.keys(mo).forEach(function (k) { prayerDays[k] = mo[k]; });
+      });
+      prunePrayerDays();
+      store("pdays", prayerDays);
       buildPrayer();
     });
   }
@@ -290,45 +544,51 @@
   }
 
   function buildPrayer() {
-    if (!CFG.prayer || !prayerData) return;
-    $("hijri").textContent = prayerData.hijri;
+    if (!CFG.prayer) return;
+    var now = new Date();
+    var day = prayerDays[dmy(now)];
+    $("hijri").textContent = day ? day.h : "";
     var box = $("prayers");
     box.innerHTML = "";
     prayerEls = [];
-    var now = new Date();
     PRAYER_NAMES.forEach(function (name) {
-      var t = atTime(now, prayerData.today[name]);
+      var tstr = day && day.t[name];
+      var t = tstr ? atTime(now, tstr) : null;
       var el = document.createElement("div");
       el.className = "pr";
-      el.innerHTML = '<div class="n">' + name + '</div><div class="t">' + fmtHM(t) + '</div><div class="c"></div>';
+      el.innerHTML = '<div class="b"></div><div class="n">' + name + '</div><div class="t">' +
+        (t ? fmtHM(t) : "--:--") + '</div><div class="c"></div>';
       box.appendChild(el);
-      prayerEls.push({ el: el, name: name, time: t, c: el.querySelector(".c") });
+      prayerEls.push({
+        el: el, name: name, time: t,
+        c: el.querySelector(".c"), b: el.querySelector(".b"),
+        alertable: ALERTABLE.indexOf(name) >= 0
+      });
     });
+    renderBells();
     tickPrayer();
   }
 
   function tickPrayer() {
-    if (!CFG.prayer || !prayerData || !prayerEls.length) return;
-    var now = new Date();
-    var nextIdx = -1;
-    for (var i = 0; i < prayerEls.length; i++) {
-      if (prayerEls[i].time > now) { nextIdx = i; break; }
+    if (!CFG.prayer || !prayerEls.length) return;
+    var now = new Date(), nextIdx = -1, nextTime = null, i;
+    for (i = 0; i < prayerEls.length; i++) {
+      var pt = prayerEls[i].time;
+      if (pt && pt > now) { nextIdx = i; nextTime = pt; break; }
     }
-    var nextTime = null;
-    if (nextIdx === -1) { // all done today -> tomorrow's Fajr
+    if (nextIdx === -1) {   // all done today -> tomorrow's Fajr, if we have it
       var tom = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-      nextTime = atTime(tom, prayerData.tomorrow.Fajr);
-      nextIdx = 0;
+      var td = prayerDays[dmy(tom)];
+      if (td && td.t.Fajr) { nextIdx = 0; nextTime = atTime(tom, td.t.Fajr); }
     }
-    for (var j = 0; j < prayerEls.length; j++) {
-      var p = prayerEls[j];
+    for (i = 0; i < prayerEls.length; i++) {
+      var p = prayerEls[i];
       var cls = "pr";
-      if (j === nextIdx) cls += " next";
-      else if (p.time <= now) cls += " past";
+      if (i === nextIdx) cls += " next";
+      else if (p.time && p.time <= now) cls += " past";
       p.el.className = cls;
-      if (j === nextIdx) {
-        var target = nextTime || p.time;
-        var mins = Math.max(0, Math.round((target - now) / 60000));
+      if (i === nextIdx && nextTime) {
+        var mins = Math.max(0, Math.round((nextTime - now) / 60000));
         p.c.textContent = "in " + (mins >= 60 ? Math.floor(mins / 60) + "h " : "") + (mins % 60) + "m";
       } else {
         p.c.textContent = "";
@@ -336,38 +596,324 @@
     }
   }
 
-  // ---------- refresh loop ----------
-  function setStatus(msg) { $("status").textContent = msg || ""; }
+  // ---------- adhan: settings, stored sound files, audio ----------
+  var alerts = load("alerts");
+  if (!alerts) { alerts = {}; ALERTABLE.forEach(function (n) { alerts[n] = true; }); }
 
-  function refresh() {
-    var jobs = [fetchWeather()];
-    if (CFG.prayer) jobs.push(fetchPrayer());
-    Promise.all(jobs).then(function () {
-      var d = new Date();
-      setStatus("Updated " + pad(d.getHours()) + ":" + pad(d.getMinutes()));
-    }).catch(function () {
-      setStatus("Offline – showing last data");
+  var fired = load("fired") || {};
+  (function () {            // keep only today's entries
+    var today = dmy(new Date());
+    Object.keys(fired).forEach(function (k) { if (k.indexOf(today) !== 0) delete fired[k]; });
+  })();
+
+  function alertCount() {
+    var n = 0;
+    ALERTABLE.forEach(function (k) { if (alerts[k]) n++; });
+    return n;
+  }
+  function renderBells() {
+    prayerEls.forEach(function (p) {
+      if (!p.alertable) { p.b.textContent = ""; return; }
+      p.b.textContent = alerts[p.name] ? "🔔" : "🔕";
+      p.b.style.opacity = alerts[p.name] ? "1" : "0.5";
     });
   }
 
-  // show cached data immediately, then refresh
+  // tiny IndexedDB wrapper for the adhan files chosen on the iPad
+  function idb() {
+    return new Promise(function (resolve, reject) {
+      var r = indexedDB.open("dash", 1);
+      r.onupgradeneeded = function () { r.result.createObjectStore("files"); };
+      r.onsuccess = function () { resolve(r.result); };
+      r.onerror = function () { reject(r.error); };
+    });
+  }
+  function idbReq(mode, fn) {
+    return idb().then(function (db) {
+      return new Promise(function (resolve, reject) {
+        var req = fn(db.transaction("files", mode).objectStore("files"));
+        req.onsuccess = function () { resolve(req.result); };
+        req.onerror = function () { reject(req.error); };
+      });
+    });
+  }
+  function idbGet(k) { return idbReq("readonly", function (s) { return s.get(k); }); }
+  function idbPut(k, v) { return idbReq("readwrite", function (s) { return s.put(v, k); }); }
+  function idbDel(k) { return idbReq("readwrite", function (s) { return s.delete(k); }); }
+
+  var sounds = { main: null, fajr: null };   // { url, name, src: "device" | "site" }
+
+  function setSound(slot, s) {
+    var old = sounds[slot];
+    if (old && old.url) { try { URL.revokeObjectURL(old.url); } catch (e) {} }
+    sounds[slot] = s;
+  }
+
+  // device file first, then adhan.mp3 / adhan-fajr.mp3 from the site (cached offline by the service worker)
+  function loadSlot(slot) {
+    return idbGet(slot).then(function (rec) {
+      if (rec && rec.buf) {
+        return { url: URL.createObjectURL(new Blob([rec.buf], { type: rec.type || "audio/mpeg" })), name: rec.name, src: "device" };
+      }
+      return null;
+    }).catch(function () { return null; }).then(function (dev) {
+      if (dev) return dev;
+      var file = slot === "fajr" ? "adhan-fajr.mp3" : "adhan.mp3";
+      return fetch(file).then(function (r) {
+        if (!r.ok) throw new Error("none");
+        return r.blob();
+      }).then(function (b) {
+        if (b.size < 10000) throw new Error("not audio");
+        return { url: URL.createObjectURL(b), name: file, src: "site" };
+      }).catch(function () { return null; });
+    }).then(function (s) { setSound(slot, s); });
+  }
+  function loadSounds() {
+    return Promise.all([loadSlot("main"), loadSlot("fajr")]).then(function () { updateChip(); });
+  }
+  function soundFor(name) {
+    return name === "Fajr" ? (sounds.fajr || sounds.main) : sounds.main;
+  }
+
+  function mimeFor(file) {
+    if (file.type) return file.type;
+    var ext = (file.name.split(".").pop() || "").toLowerCase();
+    return { mp3: "audio/mpeg", m4a: "audio/mp4", aac: "audio/aac", wav: "audio/wav", ogg: "audio/ogg" }[ext] || "audio/mpeg";
+  }
+
+  // one shared <audio> element: iOS only lets timers start sound on an element a tap has already started
+  var audio = new Audio();
+  audio.preload = "auto";
+  audio.setAttribute("playsinline", "");
+  var unlocked = false;
+
+  function silentWavUrl() {
+    var n = 800, buf = new ArrayBuffer(44 + n), v = new DataView(buf), i;
+    function s(o, str) { for (var k = 0; k < str.length; k++) v.setUint8(o + k, str.charCodeAt(k)); }
+    s(0, "RIFF"); v.setUint32(4, 36 + n, true); s(8, "WAVE"); s(12, "fmt ");
+    v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+    v.setUint32(24, 8000, true); v.setUint32(28, 8000, true); v.setUint16(32, 1, true); v.setUint16(34, 8, true);
+    s(36, "data"); v.setUint32(40, n, true);
+    for (i = 0; i < n; i++) v.setUint8(44 + i, 128);
+    return URL.createObjectURL(new Blob([buf], { type: "audio/wav" }));
+  }
+  var silentUrl = null;
+  function unlockAudio() {
+    if (unlocked) return;
+    try {
+      if (!silentUrl) silentUrl = silentWavUrl();
+      audio.src = silentUrl;
+      var p = audio.play();
+      if (p && p.then) {
+        p.then(function () { unlocked = true; updateChip(); }, function () {});
+      }
+    } catch (e) {}
+  }
+  function firstTap() {
+    if (unlocked) {
+      document.removeEventListener("touchend", firstTap, true);
+      document.removeEventListener("click", firstTap, true);
+      return;
+    }
+    unlockAudio();
+  }
+  document.addEventListener("touchend", firstTap, true);
+  document.addEventListener("click", firstTap, true);
+
+  // ---------- adhan alert overlay ----------
+  var alertMode = "stop";    // "stop" | "play" | "close"
+  var alertTimer = null;
+
+  function showAlert(title, sub, btn, mode) {
+    clearTimeout(alertTimer);
+    $("aName").textContent = title;
+    $("aSub").textContent = sub;
+    $("aBtn").textContent = btn;
+    alertMode = mode;
+    $("alert").hidden = false;
+  }
+  function hideAlert() { clearTimeout(alertTimer); $("alert").hidden = true; }
+  function stopAdhan() {
+    try { audio.pause(); } catch (e) {}
+    hideAlert();
+    updateChip();
+  }
+
+  function playAdhan(name, isTest) {
+    var s = soundFor(name);
+    var title = isTest ? "Adhan test" : name;
+    var sub = isTest ? (name === "Fajr" ? "Fajr adhan" : "Main adhan") : "It is time for " + name + " · " + hhmm(new Date());
+    if (!s) {
+      showAlert(title, "No adhan sound is set. Open the Adhan settings to choose one.", "Close", "close");
+      alertTimer = setTimeout(hideAlert, 60000);
+      return;
+    }
+    showAlert(title, sub, "Stop", "stop");
+    try {
+      audio.loop = false;
+      audio.src = s.url;
+      var p = audio.play();
+      if (p && p.then) {
+        p.then(function () { unlocked = true; updateChip(); }, function () {
+          // blocked (no tap since launch): ask for one
+          showAlert(title, sub + " – tap to play", "▶ Play adhan", "play");
+        });
+      }
+    } catch (e) {
+      showAlert(title, "Couldn't play the sound", "Close", "close");
+    }
+  }
+
+  audio.addEventListener("ended", function () {
+    if (!$("alert").hidden && alertMode === "stop") alertTimer = setTimeout(hideAlert, 4000);
+    updateChip();
+  });
+  audio.addEventListener("error", function () {
+    if (!$("alert").hidden && audio.src && audio.src !== silentUrl) {
+      showAlert($("aName").textContent, "This sound file couldn't be played. Try a different file.", "Close", "close");
+    }
+  });
+  $("aBtn").addEventListener("click", function () {
+    if (alertMode === "play") {
+      var p = audio.play();
+      alertMode = "stop"; $("aBtn").textContent = "Stop";
+      if (p && p.then) p.then(function () { unlocked = true; updateChip(); }, function () {
+        $("aSub").textContent = "Still blocked – check the iPad volume";
+        alertMode = "close"; $("aBtn").textContent = "Close";
+      });
+    } else {
+      stopAdhan();
+    }
+  });
+
+  function checkAdhan(now) {
+    if (!prayerEls.length) return;
+    prayerEls.forEach(function (p) {
+      if (!p.alertable || !alerts[p.name] || !p.time) return;
+      var diff = now - p.time;
+      if (diff < 0 || diff > ADHAN_WINDOW_MS) return;
+      var key = dmy(now) + ":" + p.name;
+      if (fired[key]) return;
+      fired[key] = 1;
+      store("fired", fired);
+      playAdhan(p.name, false);
+    });
+  }
+
+  // ---------- corner chip + settings panel ----------
+  function updateChip() {
+    var chip = $("chip"), txt, warn = false;
+    if (!CFG.prayer) { chip.hidden = true; return; }
+    chip.hidden = false;
+    if (!sounds.main && !sounds.fajr) { txt = "⚠️ Adhan: choose a sound"; warn = true; }
+    else if (!unlocked) { txt = "🔇 Tap once to enable adhan sound"; warn = true; }
+    else if (!alertCount()) { txt = "🔕 Adhan off"; }
+    else { txt = "🔔 Adhan on · " + alertCount() + " of 5"; }
+    chip.textContent = txt;
+    chip.className = "chip" + (warn ? " warn" : "");
+  }
+
+  var pendingSlot = "main";
+  function panelMsg(m) { var e = $("pmsg"); if (e) e.textContent = m || ""; }
+
+  function soundRow(slot, label, hint) {
+    var s = sounds[slot];
+    var nm = s ? esc(s.name) + (s.src === "site" ? " (from the site)" : "") : "None";
+    return '<div class="srow"><div class="sl"><b>' + label + "</b><small>" + hint + "</small><em>" + nm + "</em></div>" +
+      '<div class="sb"><button class="btn" type="button" data-a="pick" data-s="' + slot + '">Choose file</button>' +
+      (s && s.src === "device" ? '<button class="btn ghost" type="button" data-a="clear" data-s="' + slot + '">Clear</button>' : "") +
+      "</div></div>";
+  }
+
+  function renderPanel() {
+    var h = '<div class="ph"><span>Adhan alerts</span><button class="x" type="button" data-a="close">✕</button></div>' +
+      '<div class="pm" id="pmsg"></div>';
+    h += '<div class="sec" style="margin-top:0">Play the adhan for</div><div class="pills">';
+    ALERTABLE.forEach(function (n) {
+      h += '<button class="sw' + (alerts[n] ? " on" : "") + '" type="button" data-a="tog" data-n="' + n + '">' +
+        (alerts[n] ? "🔔 " : "🔕 ") + n + "</button>";
+    });
+    h += '</div><div class="sec">Sound</div>' +
+      soundRow("main", "Adhan", "Plays for every enabled prayer") +
+      soundRow("fajr", "Fajr adhan (optional)", "If empty, Fajr uses the main adhan") +
+      '<div class="btns"><button class="btn pri" type="button" data-a="test" data-n="Dhuhr">▶ Test adhan</button>' +
+      (sounds.fajr ? '<button class="btn" type="button" data-a="test" data-n="Fajr">▶ Test Fajr adhan</button>' : "") +
+      '<button class="btn ghost" type="button" data-a="close">Close</button></div>' +
+      '<div class="note">Files you choose are stored only on this iPad. Sound plays through the iPad speaker at its current volume; ' +
+      "if you hear nothing, check the volume and the side switch. After the app is reopened, tap the screen once to re-enable sound.</div>";
+    $("card").innerHTML = h;
+  }
+  function openPanel() { renderPanel(); $("panel").hidden = false; }
+  function closePanel() { $("panel").hidden = true; }
+
+  $("chip").addEventListener("click", openPanel);
+  $("panel").addEventListener("click", function (e) {
+    var t = e.target;
+    if (t === $("panel")) { closePanel(); return; }
+    while (t && t !== $("panel") && !(t.getAttribute && t.getAttribute("data-a"))) t = t.parentNode;
+    if (!t || t === $("panel")) return;
+    var a = t.getAttribute("data-a"), n = t.getAttribute("data-n"), s = t.getAttribute("data-s");
+    if (a === "close") closePanel();
+    else if (a === "tog") {
+      alerts[n] = !alerts[n]; store("alerts", alerts);
+      renderPanel(); renderBells(); updateChip();
+    } else if (a === "test") {
+      closePanel(); playAdhan(n, true);
+    } else if (a === "pick") {
+      pendingSlot = s; $("file").value = ""; $("file").click();
+    } else if (a === "clear") {
+      idbDel(s).catch(function () {}).then(function () { return loadSlot(s); }).then(function () { renderPanel(); updateChip(); });
+    }
+  });
+
+  $("file").addEventListener("change", function () {
+    var f = this.files && this.files[0];
+    if (!f) return;
+    if (f.size > 25 * 1024 * 1024) { panelMsg("That file is too large (25 MB max)."); return; }
+    var slot = pendingSlot, fr = new FileReader();
+    fr.onload = function () {
+      idbPut(slot, { buf: fr.result, type: mimeFor(f), name: f.name })
+        .then(function () { return loadSlot(slot); })
+        .then(function () { renderPanel(); updateChip(); panelMsg("Saved: " + f.name); })
+        .catch(function () { panelMsg("Couldn't save that file on this iPad."); });
+    };
+    fr.onerror = function () { panelMsg("Couldn't read that file."); };
+    fr.readAsArrayBuffer(f);
+  });
+
+  // ---------- start-up ----------
   var cw = load("weather"); if (cw) renderWeather(cw);
-  var cp = load("prayer");
-  if (cp && CFG.prayer && cp.dateKey === dmy(new Date())) { prayerData = cp; buildPrayer(); }
+  var cf = load("fx"); if (cf) renderFX(cf);
+  prunePrayerDays();
+  buildPrayer();
+  updateChip();
+  loadSounds();
 
   renderClock();
-  setInterval(renderClock, 1000);
-  setInterval(tickPrayer, 15000);
-  refresh();
-  setInterval(refresh, 30 * 60 * 1000);
-
-  // new day -> rebuild prayer rows; reload page at ~04:00 to keep memory fresh
   var lastDay = new Date().getDate();
+  var prayerJob;
   setInterval(function () {
     var d = new Date();
-    if (d.getDate() !== lastDay) { lastDay = d.getDate(); refresh(); }
-    if (d.getHours() === 4 && d.getMinutes() === 0 && d.getSeconds() < 2) location.reload();
+    renderClock();
+    checkAdhan(d);
+    if (d.getDate() !== lastDay) {          // new day: rebuild rows from cache, then refresh
+      lastDay = d.getDate();
+      buildPrayer();
+      if (prayerJob) prayerJob.run();
+    }
   }, 1000);
+  setInterval(tickPrayer, 15000);
+
+  addJob("weather", fetchWeather, 30 * 60 * 1000).run();
+  if (CFG.fx) addJob("rates", fetchFX, 60 * 60 * 1000).run();
+  if (CFG.prayer) { prayerJob = addJob("prayer times", fetchPrayer, 6 * 60 * 60 * 1000); prayerJob.run(); }
+
+  // offline start: cache the page (and adhan files) with a service worker
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", function () {
+      navigator.serviceWorker.register("sw.js").catch(function () {});
+    });
+  }
 })();
 </script>
 </body>
