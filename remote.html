@@ -56,6 +56,17 @@
     <button data-c="test">▶ Test adhan</button>
   </div>
 
+  <h2>Quran</h2>
+  <div class="grid three">
+    <button data-c="quran play">▶ Play</button>
+    <button data-c="quran pause">❚❚ Pause</button>
+    <button data-c="quran stop">■ Stop</button>
+    <button data-c="quran prev">‹ Prev verse</button>
+    <button data-c="quran next">Next verse ›</button>
+    <button data-c="quran sleep 30">Sleep 30 min</button>
+  </div>
+  <div class="pr" style="margin-top:10px"><b>Surah</b><input id="qn" type="number" inputmode="numeric" min="1" max="114" placeholder="1–114" style="width:90px;padding:10px;font-size:16px"><button id="qgo" type="button">Play</button></div>
+
   <h2>Screen</h2>
   <div class="grid">
     <button data-c="sleep">Black screen on</button>
@@ -187,6 +198,10 @@
       if (t.getAttribute("data-confirm") && !window.confirm("Reload the dashboard? It will need a tap on the iPad to re-enable sound.")) return;
       send(t.getAttribute("data-c"));
     }
+  });
+  $("qgo").addEventListener("click", function () {
+    var n = parseInt($("qn").value, 10);
+    if (n >= 1 && n <= 114) send("quran surah " + n); else { status("Enter a surah number from 1 to 114.", true); $("qn").focus(); }
   });
   $("save").addEventListener("click", function () {
     var t = clean($("code").value.trim().toLowerCase());

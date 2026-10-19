@@ -16,6 +16,7 @@
   @font-face { font-family: "Fraunces"; src: url(fonts/Fraunces.woff2) format("woff2"); font-weight: 300 700; font-style: normal; font-display: swap; }
   @font-face { font-family: "Fraunces"; src: url(fonts/Fraunces-Italic.woff2) format("woff2"); font-weight: 300 700; font-style: italic; font-display: swap; }
   @font-face { font-family: "Jost"; src: url(fonts/Jost.woff2) format("woff2"); font-weight: 300 600; font-style: normal; font-display: swap; }
+  @font-face { font-family: "AmiriQuran"; src: url(fonts/AmiriQuran.woff2) format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
   :root {
     /* Midnight (the original look) */
     --bg: #0b0f14; --fg: #e8eef5; --dim: #7d8a99; --card: #131a22; --accent: #5cc8ff;
@@ -82,7 +83,7 @@
     font: inherit; color: inherit; border: 0; margin: 0;
     -webkit-appearance: none; appearance: none; cursor: pointer;
   }
-  .wrap, .chip, .status { transform: translate(var(--dx, 0px), var(--dy, 0px)); }
+  .wrap, .corner, .status, .qmini { transform: translate(var(--dx, 0px), var(--dy, 0px)); }
   .wrap {
     height: 100%;
     display: flex;
@@ -90,9 +91,9 @@
     padding: 4vmin 5vmin 8.5vmin;
     transition: opacity 1s, transform 60s linear;
   }
-  .chip, .status { transition: transform 60s linear; }
+  .corner, .status, .qmini { transition: transform 60s linear; }
   body.night .wrap { opacity: var(--night-op); }
-  body.night .chip, body.night .status { opacity: 0.5; }
+  body.night .corner, body.night .status, body.night .qmini { opacity: 0.5; }
 
   /* ---------- top: clock + weather ---------- */
   .top {
@@ -215,8 +216,9 @@
   @media (orientation: portrait) { html[data-theme^="boho"] .pr .b { top: 1.2vmin; } }
 
   /* ---------- corner widgets ---------- */
+  .corner { position: fixed; left: 3vmin; bottom: 2vmin; z-index: 5; display: flex; align-items: center; }
   .chip {
-    position: fixed; left: 3vmin; bottom: 2vmin; z-index: 5;
+    position: relative;
     padding: 1.1vmin 2.2vmin;
     border-radius: 3vmin;
     background: var(--card);
@@ -224,6 +226,11 @@
     font-size: 2.4vmin;
   }
   .chip.warn { color: var(--warn-fg); background: var(--warn); }
+  .chip.icon, .qbtn { width: 6.6vmin; height: 6.6vmin; padding: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+  .qbtn { margin-left: 1.4vmin; background: var(--card); color: var(--dim); flex: 0 0 auto; }
+  .chip.icon svg, .qbtn svg { width: 56%; height: 56%; display: block; pointer-events: none; }
+  .chip .bd { position: absolute; top: -.6vmin; right: -.6vmin; min-width: 3vmin; height: 3vmin; padding: 0 .7vmin; box-sizing: border-box; border-radius: 1.5vmin; background: var(--accent); color: var(--bg); font-size: 1.9vmin; line-height: 3vmin; text-align: center; }
+  .qbtn.on { color: var(--accent); }
   .status {
     position: fixed; right: 3vmin; bottom: 2.6vmin; z-index: 5;
     font-size: 2vmin; color: var(--dim);
@@ -293,6 +300,76 @@
   .alert .as { font-size: 3.6vmin; color: var(--dim); margin-top: 1.5vmin; min-height: 4vmin; }
   .alert .btn { margin: 5vmin 0 0; padding: 2.4vmin 7vmin; font-size: 4vmin; }
 
+  /* ---------- Quran player ---------- */
+  .qa { font-family: "AmiriQuran", "Amiri", "Geeza Pro", "Noto Naskh Arabic", serif; }
+  .qmini { position: fixed; bottom: 1.6vmin; z-index: 6; background: var(--card); color: var(--fg); border-radius: 3vmin; padding: 1vmin 1.8vmin 1.6vmin; display: flex; align-items: center; overflow: hidden; }
+  .qmini .pb { width: 5.2vmin; height: 5.2vmin; border-radius: 50%; background: var(--pri); color: var(--pri-fg); display: flex; align-items: center; justify-content: center; flex: 0 0 auto; padding: 0; }
+  .qmini .pb svg { width: 52%; height: 52%; display: block; pointer-events: none; }
+  .qmini .tx { flex: 0 1 auto; min-width: 0; margin-left: 1.4vmin; line-height: 1.15; max-width: 37vmin; }
+  .qmini .tx b { display: block; font-size: 2.3vmin; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .qmini .tx small { display: block; font-size: 1.8vmin; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .qmini .mv { flex: 1 1 auto; min-width: 0; direction: rtl; text-align: center; margin: 0 1vmin 0 2vmin; font-size: 3vmin; line-height: 1.45; color: var(--fg);
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .qmini .bar { position: absolute; left: 1.8vmin; right: 1.8vmin; bottom: .7vmin; height: .5vmin; border-radius: 1vmin; background: var(--line); overflow: hidden; }
+  .qmini .bar i { display: block; height: 100%; width: 0; background: var(--accent); }
+  .qmini[hidden] { display: none; }
+  body.qon .status { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 26vmin; }
+  @media (orientation: landscape) {
+    body.qv .wrap { padding-bottom: 13.8vmin !important; }
+    html[data-theme] body.qv .top { padding-bottom: .6vmin; }
+    html[data-theme] body.qv .clock { font-size: 19vmin; }
+    html[data-theme] body.qv .prayers { margin-top: 1.4vmin; }
+    html[data-theme] body.qv .pr { padding-bottom: 1vmin; }
+    html[data-theme^="boho"] body.qv .now { padding: 3vmin 3vmin 1.2vmin; }
+    html[data-theme^="boho"] body.qv .now .temp { font-size: 8vmin; }
+    html[data-theme^="boho"] body.qv .now .icon svg { width: 6.4vmin; height: 6.4vmin; }
+    html[data-theme] body.qv .now .desc, html[data-theme] body.qv .now .meta { margin-top: .3vmin; }
+    html[data-theme="midnight"] body.qv .now .temp { font-size: 10vmin; }
+    html[data-theme="midnight"] body.qv .now .icon svg { width: 7vmin; height: 7vmin; }
+    html[data-theme] body.qv .pr .c { min-height: 2.4vmin; }
+    html[data-theme] body.qv .fc { padding-top: .6vmin; padding-bottom: .6vmin; }
+    html[data-theme] body.qv .fc .i svg { width: 4.6vmin; height: 4.6vmin; }
+  }
+  @media (orientation: portrait) { .qmini .mv { display: none; } .qmini .tx { max-width: none; flex: 1 1 auto; } body.qon .wrap { padding-bottom: 11.2vmin !important; } }
+  .qnow { display: flex; align-items: center; padding: 1.4vmin 0 .6vmin; }
+  .qart { width: 15vmin; height: 15vmin; border-radius: 3vmin; background: var(--pri); color: var(--pri-fg); display: flex; align-items: center; justify-content: center; font-size: 7vmin; flex: 0 0 auto; }
+  .qinfo { margin-left: 3vmin; min-width: 0; }
+  .qinfo .ar { font-size: 6vmin; line-height: 1.3; }
+  .qinfo b { display: block; font-size: 3.4vmin; font-weight: 600; }
+  .qinfo small { display: block; color: var(--dim); font-size: 2.4vmin; }
+  .qprog { margin: 1.6vmin 0 .4vmin; padding: 1vmin 0; cursor: pointer; }
+  .qprog .bar { height: 1vmin; border-radius: 1vmin; background: var(--line); position: relative; }
+  .qprog .bar i { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--accent); border-radius: 1vmin; }
+  .qprog .tm { display: flex; justify-content: space-between; color: var(--dim); font-size: 2.2vmin; margin-top: 1.4vmin; }
+  .qctl { display: flex; justify-content: center; align-items: center; margin: 1vmin 0 1.4vmin; }
+  .qctl .c { width: 9vmin; height: 9vmin; border-radius: 50%; background: var(--btn); margin: 0 1.4vmin; display: flex; align-items: center; justify-content: center; padding: 0; }
+  .qctl .c svg { width: 48%; height: 48%; display: block; pointer-events: none; }
+  .qctl .c.big { width: 12vmin; height: 12vmin; background: var(--pri); color: var(--pri-fg); }
+  .qgrid { display: flex; gap: 2vmin; }
+  .qgrid > div { flex: 1; min-width: 0; }
+  .qlist { border: 1px solid var(--line); border-radius: 2vmin; overflow-y: auto; -webkit-overflow-scrolling: touch; max-height: 38vmin; }
+  .qlist > div { padding: 1.2vmin 2vmin; font-size: 2.5vmin; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+  .qlist > div:last-child { border-bottom: 0; }
+  .qlist > div.on { background: var(--ok); color: var(--ok-fg); font-weight: 600; }
+  .qlist > div[hidden] { display: none; }
+  .qlist .ar { font-size: 3.2vmin; }
+  .qsearch { width: 100%; box-sizing: border-box; font: inherit; font-size: 2.6vmin; padding: 1.2vmin 2vmin; border-radius: 2vmin; border: 1px solid var(--btn-line); background: transparent; color: var(--fg); margin-bottom: 1vmin; }
+  .qtog { display: flex; justify-content: space-between; align-items: center; padding: 1.2vmin 0; border-top: 1px solid var(--line); margin-top: 1vmin; }
+  .qtog small { display: block; color: var(--dim); font-size: 2.2vmin; }
+  .qread { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 15; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 9vmin 6vmin 21vmin; color: var(--fg); box-sizing: border-box; }
+  .qread .top { position: absolute; top: 2.6vmin; left: 4vmin; right: 4vmin; display: flex; justify-content: space-between; align-items: center; color: var(--dim); font-size: 2.6vmin; }
+  .qread .top b { color: var(--fg); font-size: 3vmin; font-weight: 600; }
+  .qread .cur { direction: rtl; line-height: 1.8; max-width: 92vw; max-height: 100%; overflow: hidden; }
+  .qread .ctx { direction: rtl; color: var(--dim); font-size: 3.4vmin; line-height: 1.6; max-width: 84vw; opacity: .8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin: 1.6vmin 0; }
+  .qread .ref { margin-top: 2vmin; font-size: 2.4vmin; color: var(--dim); letter-spacing: .08em; }
+  .qread .dock { position: absolute; left: 6vmin; right: 6vmin; bottom: 3vmin; }
+  .qread .dock .bar { height: .7vmin; border-radius: 1vmin; background: var(--line); position: relative; overflow: hidden; }
+  .qread .dock .bar i { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--accent); }
+  .qread .dock .qctl { margin: 2vmin 0 0; }
+  .qread .dock .c { width: 8vmin; height: 8vmin; }
+  .qread .dock .c.big { width: 10.5vmin; height: 10.5vmin; }
+  .qread[hidden], .panel[hidden] { display: none; }
+
   /* ---------- notification banner (ntfy) ---------- */
   .toast {
     position: fixed; top: 2.5vmin; left: 50%; width: 86vmin; max-width: 92vw; margin-left: -43vmin; z-index: 12;
@@ -360,11 +437,14 @@
   <div class="prayers" id="prayers"></div>
 </div>
 
-<button class="chip" id="chip" type="button"></button>
+<div class="corner" id="corner"><button class="chip" id="chip" type="button"></button><button class="qbtn" id="qbtn" type="button" aria-label="Quran player"></button></div>
+<div class="qmini" id="qmini" hidden><button class="pb" id="qmPlay" type="button" aria-label="Play or pause"></button><div class="tx" id="qmOpen"><b id="qmT"></b><small id="qmS"></small></div><div class="mv qa" id="qmV"></div><div class="bar"><i id="qmBar"></i></div></div>
 <div class="status" id="status"></div>
 <div class="toast" id="toast" hidden></div>
 
 <div class="panel" id="panel" hidden><div class="card" id="card"></div></div>
+<div class="panel" id="qpanel" hidden><div class="card" id="qcard"></div></div>
+<div class="qread" id="qread" hidden></div>
 
 <div class="alert" id="alert" hidden>
   <div class="ai">&#128332;</div>
@@ -406,7 +486,7 @@
     nightTo:   parseInt(q.nightTo   || "6", 10)
   };
 
-  var BUILD = "2026-10-19.8";           // bump on every release (used by the update check)
+  var BUILD = "2026-10-19.9";           // bump on every release (used by the update check)
   var RETRY_MS = 5 * 60 * 1000;         // retry failed fetches every 5 minutes
   var ALERTABLE = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"];
   var PRAYER_NAMES = ["Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"];
@@ -469,9 +549,10 @@
   function updateStatus() {
     var bad = [];
     jobs.forEach(function (j) { if (j.failing) bad.push(j.label); });
-    $("status").textContent = bad.length
-      ? "Offline: " + bad.join(", ") + " – retrying every 5 min"
-      : "Updated " + hhmm(new Date());
+    var full = bad.length ? "Offline: " + bad.join(", ") + " – retrying every 5 min" : "Updated " + hhmm(new Date());
+    $("status").textContent = (bad.length && Q && Q.active) ? "Offline – retrying" : full;     // short while the player needs the room
+    $("status").title = full;
+    if (typeof positionMini === "function") positionMini();
   }
   function retryFailedNow() {
     jobs.forEach(function (j) { if (j.failing) j.run(); });
@@ -494,7 +575,7 @@
     var night = CFG.nightFrom > CFG.nightTo
       ? (hr >= CFG.nightFrom || hr < CFG.nightTo)
       : (hr >= CFG.nightFrom && hr < CFG.nightTo);
-    document.body.className = (night && nightMode !== "off") ? "night" : "";
+    document.body.classList.toggle("night", !!(night && nightMode !== "off"));
     setSleep((night && nightMode === "black" && Date.now() >= wakeUntil) || sleepForced, d);
   }
 
@@ -994,6 +1075,7 @@
         p.then(function () { unlocked = true; updateChip(); }, function () {});
       }
       try { chime.src = silentUrl; var p2 = chime.play(); if (p2 && p2.catch) p2.catch(function () {}); } catch (e2) {}
+      try { if (!Q.active) { qa.src = silentUrl; var p3x = qa.play(); if (p3x && p3x.catch) p3x.catch(function () {}); } } catch (e3) {}
     } catch (e) {}
   }
   function firstTap() {
@@ -1019,7 +1101,10 @@
     alertMode = mode;
     $("alert").hidden = false;
   }
-  function hideAlert() { clearTimeout(alertTimer); $("alert").hidden = true; }
+  function hideAlert() {
+    clearTimeout(alertTimer); $("alert").hidden = true;
+    if (Q && Q.resumeAfter) { Q.resumeAfter = false; qPlay(); }
+  }
   function stopAdhan() {
     try { audio.pause(); } catch (e) {}
     hideAlert();
@@ -1035,6 +1120,7 @@
       alertTimer = setTimeout(hideAlert, 60000);
       return;
     }
+    if (Q && Q.playing) { Q.resumeAfter = true; try { qa.pause(); } catch (e0) {} Q.playing = false; qUI(); }
     showAlert(title, sub, "Stop", "stop");
     try {
       audio.loop = false;
@@ -1090,16 +1176,24 @@
   // ---------- corner chip + settings panel ----------
   function updateChip() {
     var chip = $("chip"), txt, warn = false;
-    if (!CFG.prayer) { chip.hidden = true; return; }
+    if (!CFG.prayer) { chip.hidden = true; if (typeof positionMini === "function") positionMini(); return; }
     chip.hidden = false;
     if (updateReady) { txt = "🔄 Update ready – tap here"; warn = true; }
     else if (!sounds.main && !sounds.fajr) { txt = "⚠️ Adhan: choose a sound"; warn = true; }
     else if (!unlocked) { txt = "🔇 Tap once to enable adhan sound"; warn = true; }
     else if (!alertCount()) { txt = "🔕 Adhan off"; }
     else { txt = "🔔 Adhan on · " + alertCount() + " of 5"; }
-    if (nUnread) txt += " · ✉ " + nUnread;
-    chip.textContent = txt;
-    chip.className = "chip" + (warn ? " warn" : "");
+    if (!warn) {      // sound is chosen and enabled: just a small settings icon (the details are in the title and the settings)
+      chip.className = "chip icon";
+      chip.innerHTML = ICON.gear + (nUnread ? '<span class="bd">' + nUnread + "</span>" : "");
+      chip.title = txt + (nUnread ? " · " + nUnread + " unread" : "");
+      chip.setAttribute("aria-label", "Settings. " + chip.title);
+    } else {
+      if (nUnread) txt += " · ✉ " + nUnread;
+      chip.textContent = txt; chip.title = ""; chip.removeAttribute("aria-label");
+      chip.className = "chip warn";
+    }
+    if (typeof positionMini === "function") positionMini();
   }
 
     function panelMsg(m) { var e = $("pmsg"); if (e) e.textContent = m || ""; }
@@ -1386,6 +1480,7 @@
       '<div class="note">Anyone with this link can send commands, so keep it private. “New code” replaces it.</div>';
   }
 
+  function needsTapNote() { return unlocked ? "" : " (the iPad needs one tap first)"; }
   // commands: stop, test, theme <x>, night <black|dim|off>, sleep, wake, alert <prayer> <on|off>, refresh, reload, ping
   function runCommand(text) {
     var w = text.trim().toLowerCase().split(/\s+/), c = w[0], ack = "";
@@ -1409,6 +1504,14 @@
         if (!$("panel").hidden) renderPanel();
         renderBells(); updateChip(); ack = nm + " alert " + w[2];
       }
+    } else if (c === "quran") {
+      var qc = w[1];
+      if (qc === "play") { if (w[2] >= 1 && w[2] <= 114) qStartSura(+w[2]); else qPlay(); ack = "quran: play" + needsTapNote(); }
+      else if (qc === "pause") { qPause(); ack = "quran paused"; }
+      else if (qc === "stop") { qStop(); ack = "quran stopped"; }
+      else if (qc === "next" || qc === "prev") { qLoadData(function () { if (qc === "next") qNextVerse(false); else qPrevVerse(); }); ack = "quran: " + qc + " verse"; }
+      else if (qc === "surah" && w[2] >= 1 && w[2] <= 114) { qStartSura(+w[2]); ack = "quran: surah " + w[2] + needsTapNote(); }
+      else if (qc === "sleep" && w[2] !== undefined) { qSleep(w[2] === "end" ? "end" : String(+w[2] || 0)); ack = "quran sleep timer: " + w[2]; }
     } else if (c === "refresh") { jobs.forEach(function (j) { j.run(); }); ack = "refreshing data"; }
     else if (c === "reload") { remoteSend("ack: reloading (tap the iPad once afterwards)"); setTimeout(function () { location.reload(); }, 800); return; }
     else if (c === "ping") { ack = "online " + hhmm(new Date()) + " · sound " + (unlocked ? "ready" : "needs a tap") + " · " + BUILD; }
@@ -1561,6 +1664,249 @@
       '<div class="sb"><button class="sw' + (weekly ? " on" : "") + '" type="button" data-a="weekly">' + (weekly ? "On" : "Off") + '</button></div></div>';
   }
 
+  // ---------- Quran player: verse-by-verse audio from everyayah.com, text bundled in quran-data.js ----------
+  var ICON = {
+    gear: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',
+    book: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>',
+    play: '<svg viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z" fill="currentColor"/></svg>',
+    pause: '<svg viewBox="0 0 24 24"><rect x="5" y="4" width="5" height="16" rx="1" fill="currentColor"/><rect x="14" y="4" width="5" height="16" rx="1" fill="currentColor"/></svg>',
+    prev: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>',
+    next: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>',
+    skipb: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" y1="19" x2="5" y2="5"/></svg>',
+    skipf: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg>',
+    close: '<svg viewBox="0 0 24 24"><path d="M5 5l14 14M19 5L5 19" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" fill="none"/></svg>'
+  };
+  var QREC = [["Mishary Alafasy", "Alafasy_128kbps"], ["Abdul Basit (Murattal)", "Abdul_Basit_Murattal_192kbps"], ["Mahmoud Khalil Al-Husary", "Husary_128kbps"],
+    ["Mohamed Al-Minshawi (Murattal)", "Minshawy_Murattal_128kbps"], ["Abdurrahman As-Sudais", "Abdurrahmaan_As-Sudais_192kbps"], ["Saud Ash-Shuraim", "Saood_ash-Shuraym_128kbps"],
+    ["Maher Al-Muaiqly", "MaherAlMuaiqly128kbps"], ["Saad Al-Ghamdi", "Ghamadi_40kbps"], ["Ahmed Al-Ajamy", "Ahmed_ibn_Ali_al-Ajamy_128kbps_ketaballah.net"]];
+  var QBASE = "https://everyayah.com/data/";
+  var qa = new Audio(); qa.preload = "auto"; qa.setAttribute("playsinline", "");
+  var qpre = new Audio(); qpre.preload = "auto";
+  var qsv = load("quran") || {};
+  var Q = { sura: qsv.sura >= 1 && qsv.sura <= 114 ? qsv.sura : 18, a: qsv.a, rec: qsv.rec >= 0 && qsv.rec < QREC.length ? qsv.rec : 0, verses: qsv.verses !== false,
+    active: false, playing: false, needTap: false, err: "", sleepAt: 0, sleepEnd: false, sleepV: "0", resumeAfter: false, retry: 0, loading: false, dataErr: "" };
+  function p3(n) { return ("00" + n).slice(-3); }
+  function qHasBis(s) { return s !== 1 && s !== 9; }
+  function qFirst(s) { return qHasBis(s) ? 0 : 1; }
+  function qCount(s) { return QDATA.s[s - 1][2]; }
+  function qText(s, a) { return a === 0 ? QDATA.v[0][0] : QDATA.v[s - 1][a - 1]; }
+  function qUrl(s, a) { return QBASE + QREC[Q.rec][1] + "/" + (a === 0 ? "001001" : p3(s) + p3(a)) + ".mp3"; }
+  function qPersist() { store("quran", { sura: Q.sura, a: Q.a, rec: Q.rec, verses: Q.verses }); }
+  function qLoadData(cb) {
+    if (window.QDATA) { cb(); return; }
+    if (Q.loading) return;
+    Q.loading = true; Q.dataErr = "";
+    var sc = document.createElement("script");
+    sc.src = "quran-data.js";
+    sc.onload = function () { Q.loading = false; if (window.QDATA) { if (Q.a == null || Q.a < qFirst(Q.sura) || Q.a > qCount(Q.sura)) Q.a = qFirst(Q.sura); cb(); } };
+    sc.onerror = function () { Q.loading = false; Q.dataErr = "Couldn't load the Quran text. Check the connection and try again."; qUI(); };
+    document.head.appendChild(sc);
+  }
+  function qNextPos() {
+    var s = Q.sura, a = Q.a + 1;
+    if (a > qCount(s)) { if (s >= 114) return null; s++; a = qFirst(s); }
+    return { s: s, a: a };
+  }
+  function qResume() {
+    var p;
+    try { p = qa.play(); } catch (e) {}
+    if (p && p.then) p.then(function () { Q.needTap = false; qUI(); }, function () { Q.playing = false; Q.needTap = true; qUI(); });
+  }
+  function qGoto(s, a, play) {
+    Q.sura = s; Q.a = a; Q.err = ""; Q.retry = 0; Q.active = true; qPersist();
+    qa.src = qUrl(s, a);
+    var np = qNextPos(); if (np) qpre.src = qUrl(np.s, np.a);
+    if (play !== false) qResume();
+    qUI();
+  }
+  function qPlay() {
+    qLoadData(function () {
+      Q.active = true;
+      if (!qa.src || qa.src.indexOf(QBASE) !== 0) qGoto(Q.sura, Q.a, true); else qResume();
+      qUI();
+    });
+  }
+  function qPause() { try { qa.pause(); } catch (e) {} Q.playing = false; Q.resumeAfter = false; qUI(); }
+  function qToggle() { if (Q.playing) qPause(); else qPlay(); }
+  function qStop() { try { qa.pause(); } catch (e) {} Q.playing = false; Q.active = false; Q.sleepAt = 0; Q.sleepEnd = false; Q.sleepV = "0"; Q.resumeAfter = false; qUI(); }
+  function qNextVerse(auto) {
+    var np = qNextPos();
+    if (!np) { qPause(); return; }
+    if (auto && Q.sleepEnd && np.s !== Q.sura) { Q.sleepEnd = false; Q.sleepV = "0"; qPause(); qGoto(np.s, np.a, false); return; }
+    qGoto(np.s, np.a, true);
+  }
+  function qPrevVerse() {
+    if (qa.currentTime > 3) { try { qa.currentTime = 0; } catch (e) {} return; }
+    var s = Q.sura, a = Q.a - 1;
+    if (a < qFirst(s)) { if (s <= 1) a = qFirst(s); else { s--; a = qCount(s); } }
+    qGoto(s, a, Q.playing || Q.needTap);
+  }
+  function qSkipSura(d) {
+    var s = Q.sura + d; if (s < 1 || s > 114) return;
+    qGoto(s, qFirst(s), Q.playing || Q.needTap);
+  }
+  function qStartSura(n, a) {
+    qLoadData(function () {
+      var f = qFirst(n); qGoto(n, a == null ? f : Math.max(f, Math.min(qCount(n), a)), true);
+      if (!$("qpanel").hidden) qPanelFill();
+    });
+  }
+  function qSleep(v) {
+    Q.sleepAt = 0; Q.sleepEnd = false; Q.sleepV = String(v);
+    if (v === "end") Q.sleepEnd = true; else if (+v > 0) Q.sleepAt = Date.now() + (+v) * 60000;
+    if (!$("qpanel").hidden) qPanelFill();
+  }
+  function qOurs() { return Q.active && window.QDATA && qa.src && qa.src.indexOf(QBASE) === 0; }
+  qa.addEventListener("playing", function () { if (!qOurs()) return; Q.playing = true; Q.needTap = false; Q.err = ""; Q.retry = 0; qUI(); });
+  qa.addEventListener("pause", function () { if (qOurs() && !qa.ended) { Q.playing = false; qUI(); } });
+  qa.addEventListener("ended", function () { if (qOurs()) qNextVerse(true); });
+  qa.addEventListener("error", function () {
+    if (!qOurs()) return;
+    Q.playing = false;
+    if (Q.retry < 3) { Q.retry++; Q.err = "Connection problem – retrying…"; setTimeout(function () { if (Q.active && !Q.playing) { qa.src = qUrl(Q.sura, Q.a); qResume(); } }, 4000); }
+    else { Q.err = "Can't reach the audio. Check the internet connection, then tap play."; }
+    qUI();
+  });
+  function qTick() {
+    if (Q.sleepAt && Date.now() >= Q.sleepAt) { Q.sleepAt = 0; Q.sleepV = "0"; qPause(); }
+  }
+  function qPos() {
+    var f = qFirst(Q.sura), n = qCount(Q.sura);
+    return n - f <= 0 ? 1 : (Q.a - f + 1) / (n - f + 1);
+  }
+  function qVerseLabel() { return Q.a === 0 ? "Bismillah" : "Verse " + Q.a + " of " + qCount(Q.sura); }
+  function positionMini() {
+    var m = $("qmini"), c = $("corner"), st = $("status"), vw = window.innerWidth, fs = vw * 0.01, cr = c.getBoundingClientRect();
+    if (m.hidden) {      // keep the status text from running into the buttons on the left
+      st.style.maxWidth = Math.max(60, Math.round(vw - cr.right - 5.2 * fs)) + "px";
+      return;
+    }
+    st.style.maxWidth = "";
+    var sr = st.getBoundingClientRect();
+    var left = Math.round(cr.right + 1.2 * fs), right = Math.round(vw - sr.left + 1.2 * fs);
+    if (!(right > 0 && right < vw / 2)) right = Math.round(vw * 0.16);
+    m.style.left = left + "px"; m.style.right = right + "px";
+  }
+  function qUI() {
+    var b = $("qbtn"), m = $("qmini");
+    b.innerHTML = ICON.book; b.className = "qbtn" + (Q.active ? " on" : "");
+    document.body.classList.toggle("qon", !!Q.active);
+    updateStatus();
+    if (!Q.active || !window.QDATA) { m.hidden = true; document.body.classList.remove("qv"); positionMini(); qPanelLive(); return; }
+    m.hidden = false;
+    document.body.classList.toggle("qv", Q.verses);
+    $("qmPlay").innerHTML = Q.playing ? ICON.pause : ICON.play;
+    $("qmT").innerHTML = esc(QDATA.s[Q.sura - 1][1]) + ' <span class="qa">· ' + esc(QDATA.s[Q.sura - 1][0]) + "</span>";
+    $("qmS").textContent = Q.err || (Q.needTap ? "Tap ▶ to start the sound" : QREC[Q.rec][0] + " · " + (Q.a === 0 ? "Bismillah" : Q.a + "/" + qCount(Q.sura)));
+    $("qmV").textContent = Q.verses ? qText(Q.sura, Q.a) : "";
+    $("qmBar").style.width = Math.round(qPos() * 100) + "%";
+    positionMini(); qPanelLive(); qReadFill();
+  }
+  function qSleepLabel() {
+    if (Q.sleepEnd) return "Stops at the end of the surah";
+    if (Q.sleepAt) return "Stops in " + Math.max(1, Math.ceil((Q.sleepAt - Date.now()) / 60000)) + " min";
+    return "";
+  }
+  function qPanelLive() {
+    if ($("qpanel").hidden || !window.QDATA) return;
+    var s = QDATA.s[Q.sura - 1], e;
+    if ((e = $("qpAr"))) e.textContent = "سورة " + s[0];
+    if ((e = $("qpEn"))) e.textContent = s[1] + " · Surah " + Q.sura;
+    if ((e = $("qpSub"))) e.textContent = Q.err || (Q.needTap ? "Tap ▶ to start the sound" : QREC[Q.rec][0] + " · " + s[2] + " verses");
+    if ((e = $("qpPlay"))) e.innerHTML = Q.playing ? ICON.pause : ICON.play;
+    if ((e = $("qpBar"))) e.style.width = Math.round(qPos() * 100) + "%";
+    if ((e = $("qpL"))) e.textContent = Q.active ? qVerseLabel() : "Not playing";
+    if ((e = $("qpR"))) e.textContent = qSleepLabel();
+    var rows = $("qcard").querySelectorAll("[data-a=qsura]"), i;
+    for (i = 0; i < rows.length; i++) rows[i].className = (+rows[i].getAttribute("data-n") === Q.sura) ? "on" : "";
+    rows = $("qcard").querySelectorAll("[data-a=qrec]");
+    for (i = 0; i < rows.length; i++) rows[i].className = (+rows[i].getAttribute("data-n") === Q.rec) ? "on" : "";
+    var pills = $("qcard").querySelectorAll("[data-a=qsleep]");
+    for (i = 0; i < pills.length; i++) pills[i].className = "sw" + (pills[i].getAttribute("data-v") === Q.sleepV ? " on" : "");
+  }
+  function qPanelFill() {
+    if (!window.QDATA) { $("qcard").innerHTML = '<div class="ph"><span>Quran</span><button class="x" type="button" data-a="qclose" aria-label="Close">' + ICON.close + '</button></div><div class="note">' + esc(Q.dataErr || "Loading…") + "</div>"; return; }
+    var h = '<div class="ph"><span>Quran</span><button class="x" type="button" data-a="qclose" aria-label="Close">' + ICON.close + "</button></div>" +
+      '<div class="qnow"><div class="qart qa">&#1587;</div><div class="qinfo"><div class="ar qa" id="qpAr"></div><b id="qpEn"></b><small id="qpSub"></small></div></div>' +
+      '<div class="qprog" id="qpWrap" data-a="qseek"><div class="bar"><i id="qpBar"></i></div><div class="tm"><span id="qpL"></span><span id="qpR"></span></div></div>' +
+      '<div class="qctl"><button class="c" type="button" data-a="qskipb" aria-label="Previous surah">' + ICON.skipb + '</button><button class="c" type="button" data-a="qprev" aria-label="Previous verse">' + ICON.prev + '</button>' +
+      '<button class="c big" id="qpPlay" type="button" data-a="qtoggle" aria-label="Play or pause"></button>' +
+      '<button class="c" type="button" data-a="qnext" aria-label="Next verse">' + ICON.next + '</button><button class="c" type="button" data-a="qskipf" aria-label="Next surah">' + ICON.skipf + "</button></div>" +
+      '<div class="qtog"><div><b>Show verses in the mini player</b><small>Landscape only. The reading view always shows them.</small></div><button class="sw' + (Q.verses ? " on" : "") + '" type="button" data-a="qverses">' + (Q.verses ? "On" : "Off") + "</button></div>" +
+      '<div class="btns" style="margin:0 0 1vmin"><button class="btn pri" type="button" data-a="qread">Open reading view</button></div>' +
+      '<div class="sec" style="margin-top:1vmin">Sleep timer</div><div class="pills">';
+    [["0", "Off"], ["15", "15 min"], ["30", "30 min"], ["60", "60 min"], ["end", "End of surah"]].forEach(function (o) { h += '<button class="sw" type="button" data-a="qsleep" data-v="' + o[0] + '">' + o[1] + "</button>"; });
+    h += '</div><div class="qgrid"><div><div class="sec">Reciter</div><div class="qlist">';
+    QREC.forEach(function (r, i) { h += '<div data-a="qrec" data-n="' + i + '">' + esc(r[0]) + "</div>"; });
+    h += '</div></div><div><div class="sec">Surah</div><input class="qsearch" id="qfind" type="text" placeholder="Search by name or number" autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false"><div class="qlist" id="qlist">';
+    QDATA.s.forEach(function (r, i) { h += '<div data-a="qsura" data-n="' + (i + 1) + '" data-k="' + esc((i + 1) + " " + r[1].toLowerCase() + " " + r[0]) + '"><span>' + (i + 1) + " · " + esc(r[1]) + '</span><span class="ar qa">' + esc(r[0]) + "</span></div>"; });
+    h += '</div></div></div><div class="note" style="margin-top:2vmin">Audio streams from everyayah.com, so it needs internet. It pauses by itself for the adhan and carries on afterwards. Quran text: Tanzil.net (CC BY-SA 4.0). Tap once after the app opens to allow sound.</div>' +
+      '<div class="btns"><button class="btn ghost" type="button" data-a="qclose">Close</button></div>';
+    $("qcard").innerHTML = h;
+    qPanelLive();
+    var cur = $("qlist").querySelector(".on"); if (cur) $("qlist").scrollTop = Math.max(0, cur.offsetTop - 60);
+  }
+  function qOpenPanel() { $("qpanel").hidden = false; qPanelFill(); qLoadData(function () { qPanelFill(); qUI(); }); }
+  function qReadFill() {
+    var r = $("qread"); if (r.hidden || !window.QDATA) return;
+    var cur = qText(Q.sura, Q.a), len = cur.length, fs = len < 60 ? 8.6 : len < 120 ? 7 : len < 220 ? 5.6 : len < 380 ? 4.4 : 3.5;
+    var np = qNextPos(), pa = Q.a - 1, pv = "";
+    if (pa >= qFirst(Q.sura)) pv = qText(Q.sura, pa);
+    var nv = np && np.s === Q.sura ? qText(np.s, np.a) : "";
+    var s = QDATA.s[Q.sura - 1];
+    $("qrT").innerHTML = "<b>" + esc(s[1]) + "</b> · " + esc(QREC[Q.rec][0]);
+    $("qrPrev").textContent = pv; $("qrCur").textContent = cur; $("qrCur").style.fontSize = fs + "vmin"; $("qrNext").textContent = nv;
+    $("qrRef").textContent = (s[1] + " · " + (Q.a === 0 ? "Bismillah" : Q.sura + ":" + Q.a)).toUpperCase();
+    $("qrBar").style.width = Math.round(qPos() * 100) + "%";
+    $("qrPlay").innerHTML = Q.playing ? ICON.pause : ICON.play;
+  }
+  function qOpenRead() {
+    qLoadData(function () {
+      if (!Q.active) { Q.active = true; qGoto(Q.sura, Q.a, false); }
+      var r = $("qread");
+      r.innerHTML = '<div class="top"><span id="qrT"></span><button class="x" type="button" data-a="qrclose" aria-label="Close">' + ICON.close + "</button></div>" +
+        '<div class="ctx qa" id="qrPrev"></div><div class="cur qa" id="qrCur"></div><div class="ctx qa" id="qrNext"></div><div class="ref" id="qrRef"></div>' +
+        '<div class="dock"><div class="bar"><i id="qrBar"></i></div><div class="qctl"><button class="c" type="button" data-a="qprev" aria-label="Previous verse">' + ICON.prev + "</button>" +
+        '<button class="c big" id="qrPlay" type="button" data-a="qtoggle" aria-label="Play or pause"></button><button class="c" type="button" data-a="qnext" aria-label="Next verse">' + ICON.next + "</button></div></div>";
+      r.hidden = false; $("qpanel").hidden = true; qReadFill();
+    });
+  }
+  function qClick(e) {
+    var t = e.target;
+    while (t && t.getAttribute && !t.getAttribute("data-a")) t = t.parentNode;
+    if (!t || !t.getAttribute) return;
+    var a = t.getAttribute("data-a"), n = +t.getAttribute("data-n");
+    if (a === "qclose") $("qpanel").hidden = true;
+    else if (a === "qrclose") { $("qread").hidden = true; }
+    else if (a === "qtoggle") qToggle();
+    else if (a === "qprev") qPrevVerse();
+    else if (a === "qnext") qNextVerse(false);
+    else if (a === "qskipb") qSkipSura(-1);
+    else if (a === "qskipf") qSkipSura(1);
+    else if (a === "qsura") qStartSura(n);
+    else if (a === "qrec") { var was = Q.playing || Q.needTap; Q.rec = n; qPersist(); if (Q.active) qGoto(Q.sura, Q.a, was); else qPanelLive(); }
+    else if (a === "qsleep") qSleep(t.getAttribute("data-v"));
+    else if (a === "qverses") { Q.verses = !Q.verses; qPersist(); qPanelFill(); qUI(); }
+    else if (a === "qread") qOpenRead();
+    else if (a === "qseek") {
+      var r = t.getBoundingClientRect(), f = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)), fi = qFirst(Q.sura), c = qCount(Q.sura);
+      qGoto(Q.sura, fi + Math.round(f * (c - fi)), Q.playing || Q.needTap);
+    }
+  }
+  $("qpanel").addEventListener("click", function (e) { if (e.target === $("qpanel")) { $("qpanel").hidden = true; return; } qClick(e); });
+  $("qread").addEventListener("click", qClick);
+  $("qpanel").addEventListener("input", function (e) {
+    if (!e.target || e.target.id !== "qfind") return;
+    var v = e.target.value.toLowerCase().replace(/^\s+|\s+$/g, ""), rows = $("qlist").children, i;
+    for (i = 0; i < rows.length; i++) rows[i].hidden = !!v && rows[i].getAttribute("data-k").toLowerCase().indexOf(v) < 0;
+  });
+  $("qbtn").addEventListener("click", qOpenPanel);
+  $("qmPlay").addEventListener("click", function (e) { e.stopPropagation(); qToggle(); });
+  $("qmOpen").addEventListener("click", qOpenPanel);
+  $("qmV").addEventListener("click", qOpenRead);
+  window.addEventListener("resize", positionMini);
+  window.addEventListener("orientationchange", function () { setTimeout(positionMini, 300); });
+
   // ---------- ?debug=1 shows screen measurements (for layout problems on a real iPad) ----------
   if (q.debug === "1") {
     var dbg = document.createElement("div");
@@ -1592,6 +1938,7 @@
   buildPrayer();
   applyTheme();
   updateChip();
+  qUI();
   loadSounds();
 
   renderClock();
@@ -1604,6 +1951,7 @@
     checkAdhan(d);
     maybeAutoRefresh(d);
     maybeWeekly(d);
+    qTick();
     if (d.getDate() !== lastDay) {          // new day: rebuild rows from cache, then refresh
       lastDay = d.getDate();
       buildPrayer();

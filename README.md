@@ -203,3 +203,19 @@ Settings → **Notifications** → type the ntfy.sh topic your Pi already publis
 ## Weekly refresh
 
 Settings → Maintenance → **Weekly refresh** (on by default). After 7 days of uptime the app reloads once, in the evening 45 minutes to 4 hours after Isha, never near a prayer or while an alert is showing. Reloading makes iPadOS silence the adhan until the screen is tapped once, so if remote control is on, your phone gets a message "weekly refresh done – tap the iPad once". Turn it off if you would rather never reload by itself.
+
+## Quran player
+
+The small book button at the bottom-left opens the player. Pick a surah (search by name or number) and a reciter (Mishary Alafasy is the default); it plays verse by verse, continues into the next surah, and remembers where you were.
+
+- **Mini player:** a pill at the bottom while something is playing: play/pause, surah, reciter and verse counter. In landscape it also shows the current verse in Arabic (switch that off in the player). In portrait it stays compact and the verse is read in the reading view.
+- **Reading view:** the current verse large, with the previous and next verse dimmed, plus the controls. Tap the verse in the mini player, or "Open reading view".
+- **Controls:** previous/next verse, previous/next surah, tap the bar to jump to a verse, sleep timer (15/30/60 min or end of the surah).
+- **Adhan:** the Quran pauses by itself when the adhan plays and resumes when the adhan is stopped or finished.
+- **Phone remote:** a Quran section on the remote page (play, pause, stop, previous/next verse, surah number, sleep). Commands: `quran play`, `quran play 18`, `quran pause`, `quran stop`, `quran next`, `quran prev`, `quran surah 36`, `quran sleep 30`.
+- **Needs internet for the audio** (everyayah.com). The text and the Arabic font are bundled (`quran-data.js`, `fonts/AmiriQuran.woff2`). Like the adhan, sound needs one tap after the app opens.
+- Verse text: Tanzil.net via the quran-json package (CC BY-SA 4.0). Font: Amiri Quran (SIL OFL).
+
+## Settings icon
+
+When adhan sound is enabled and a sound is chosen, the bottom-left pill becomes a small gear (tap it for settings). The warning text comes back whenever a tap, a sound or an update is needed. A small number on the gear counts unread notifications.
