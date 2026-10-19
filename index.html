@@ -61,6 +61,7 @@
   [hidden] { display: none !important; }
   html, body {
     height: 100%;
+    min-height: -webkit-fill-available;
     margin: 0;
     background: var(--bg);
     color: var(--fg);
@@ -265,15 +266,19 @@
 
   /* ---------- night: black clock screen ---------- */
   .sleep {
-    position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 8;
+    position: fixed; top: -12vmin; left: -6vmin; right: -6vmin; bottom: -12vmin; z-index: 8;
     background: #000; display: flex; align-items: center; justify-content: center;
     text-align: center; cursor: pointer;
   }
+  html.sleeping, html.sleeping body { background: #000 !important; background-image: none !important; }
   .sleep .sl-in { transform: translate(var(--dx, 0px), var(--dy, 0px)); transition: transform 60s linear; }
   .sleep .sl-clock { font-family: var(--font-clock); font-weight: var(--clock-weight); font-size: 26vmin; line-height: 1; color: #f4e8d4; opacity: 0.3; letter-spacing: -0.02em; font-variant-numeric: lining-nums tabular-nums; white-space: nowrap; }
   .sleep .sl-clock .ampm { font-family: var(--font-ui); font-size: 6vmin; font-weight: 300; margin-left: 1.5vmin; letter-spacing: 0; }
   .sleep .sl-next { margin-top: 3vmin; font-size: 3.4vmin; color: #f4e8d4; opacity: 0.26; }
   .note a, .note code { word-break: break-all; color: var(--accent); font-style: normal; }
+  .urlrow { display: flex; align-items: center; margin: 1.4vmin 0 0.6vmin; }
+  .urlbox { flex: 1 1 auto; min-width: 0; font: inherit; font-size: 2.8vmin; padding: 1.6vmin 2vmin; border-radius: 2vmin; border: 1px solid var(--btn-line); background: var(--bg); color: var(--fg); -webkit-user-select: text; user-select: text; -webkit-appearance: none; appearance: none; }
+  .urlrow .btn { flex: 0 0 auto; margin-left: 1.4vmin; }
   .note .tp { display: block; font-size: 3.4vmin; color: var(--accent); letter-spacing: 0.04em; margin: 0.6vmin 0; }
 
   /* ---------- adhan alert ---------- */
@@ -385,7 +390,7 @@
     nightTo:   parseInt(q.nightTo   || "6", 10)
   };
 
-  var BUILD = "2026-10-19.4";           // bump on every release (used by the update check)
+  var BUILD = "2026-10-19.5";           // bump on every release (used by the update check)
   var RETRY_MS = 5 * 60 * 1000;         // retry failed fetches every 5 minutes
   var ALERTABLE = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"];
   var PRAYER_NAMES = ["Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"];
@@ -496,6 +501,7 @@
       return;
     }
     el.hidden = !on;
+    document.documentElement.className = on ? "sleeping" : "";
     if (on) renderSleepText(d);
   }
   function renderSleepText(d) {
@@ -1138,6 +1144,10 @@
     } else if (a === "night") {
       nightMode = t.getAttribute("data-v"); store("nightmode", nightMode);
       wakeUntil = 0; renderClock(); renderPanel();
+    } else if (a === "rcopy") {
+      copyRemoteLink();
+    } else if (a === "rshare") {
+      try { navigator.share({ title: "Dashboard remote", url: remoteURL() }).catch(function () {}); } catch (e) {}
     } else if (a === "rtest") {
       remoteTest();
     } else if (a === "rgen") {
@@ -1291,6 +1301,20 @@
   setInterval(function () { if (remoteTopic && (!remoteES || remoteES.readyState === 2)) remoteConnect(); }, 60 * 1000);
   setInterval(remotePoll, 12 * 1000);
 
+  function copyRemoteLink() {
+    var url = remoteURL(), box = $("rtest");
+    function say(t) { if ($("rtest")) $("rtest").textContent = t; }
+    function fallback() {
+      var el = $("rurl"), ok = false;
+      try { el.focus(); el.select(); el.setSelectionRange(0, 9999); ok = document.execCommand("copy"); } catch (e) {}
+      say(ok ? "✓ Link copied." : "Select the link in the box and choose Copy.");
+    }
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(function () { say("✓ Link copied."); }, fallback);
+      else fallback();
+    } catch (e) { fallback(); }
+  }
+
   function remoteTest() {
     var id = Math.random().toString(36).slice(2, 10), box = $("rtest");
     selfTest = { id: id, ok: false };
@@ -1321,7 +1345,11 @@
     return '<div class="srow"><div class="sl"><b>Remote is on</b><small id="rstate">' + esc(remoteLabel()) + '</small></div>' +
       '<div class="sb"><button class="btn" type="button" data-a="rtest">Test</button><button class="btn" type="button" data-a="rgen">New code</button><button class="btn ghost" type="button" data-a="roff">Turn off</button></div></div>' +
       '<div class="pm" id="rtest"></div>' +
-      '<div class="note">On your phone open:<span class="tp">' + esc(remoteURL()).replace("#", "<wbr>#") + '</span>Anyone with this code can send commands, so keep it private. “New code” replaces it.</div>';
+      '<div class="note">On your phone open this address (tap the box to select it, or use Copy / Share):</div>' +
+      '<div class="urlrow"><input class="urlbox" id="rurl" type="text" readonly onfocus="this.select()" onclick="this.select()" value="' + esc(remoteURL()) + '" aria-label="Remote control link">' +
+      '<button class="btn pri" type="button" data-a="rcopy">Copy</button>' +
+      (navigator.share ? '<button class="btn" type="button" data-a="rshare">Share</button>' : "") + '</div>' +
+      '<div class="note">Anyone with this link can send commands, so keep it private. “New code” replaces it.</div>';
   }
 
   // commands: stop, test, theme <x>, night <black|dim|off>, sleep, wake, alert <prayer> <on|off>, refresh, reload, ping
@@ -1351,6 +1379,22 @@
     else if (c === "reload") { remoteSend("ack: reloading (tap the iPad once afterwards)"); setTimeout(function () { location.reload(); }, 800); return; }
     else if (c === "ping") { ack = "online " + hhmm(new Date()) + " · sound " + (unlocked ? "ready" : "needs a tap") + " · " + BUILD; }
     if (ack) remoteSend("ack: " + ack);
+  }
+
+  // ---------- ?debug=1 shows screen measurements (for layout problems on a real iPad) ----------
+  if (q.debug === "1") {
+    var dbg = document.createElement("div");
+    dbg.style.cssText = "position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:99;background:rgba(0,0,0,.85);color:#9f9;font:16px/1.4 monospace;padding:12px;white-space:pre;-webkit-user-select:text;user-select:text;";
+    document.body.appendChild(dbg);
+    var dbgUpdate = function () {
+      var vv = window.visualViewport, sl = $("sleep").getBoundingClientRect();
+      dbg.textContent = "inner " + innerWidth + "x" + innerHeight + "\nouter " + outerWidth + "x" + outerHeight +
+        "\nscreen " + screen.width + "x" + screen.height + "\nclient " + document.documentElement.clientWidth + "x" + document.documentElement.clientHeight +
+        "\nvisual " + (vv ? Math.round(vv.width) + "x" + Math.round(vv.height) + " @" + Math.round(vv.offsetTop) : "n/a") +
+        "\nstandalone " + navigator.standalone + "  dpr " + devicePixelRatio + "\nsleep rect top " + Math.round(sl.top) + " bottom " + Math.round(sl.bottom) + "\n(tap to close)";
+    };
+    dbg.addEventListener("click", function (e) { e.stopPropagation(); dbg.remove(); });
+    dbgUpdate(); setInterval(dbgUpdate, 2000);
   }
 
   // ---------- start-up ----------

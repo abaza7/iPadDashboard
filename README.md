@@ -109,6 +109,7 @@ https://<your-username>.github.io/iPadDashboard/?city=Alexandria&lat=31.2001&lon
 | `prayer` | on | `0` to hide prayer times and adhan |
 | `theme` | `boho` | `boho` (auto day/night), `boho-light`, `boho-dark` or `midnight`. You can also change it in the settings panel |
 | `gold` | on | `0` to hide the gold price |
+| `debug` | off | `1` shows screen measurements (size, safe areas) to help diagnose layout problems on a real iPad. Tap the box to close it |
 | `drift` | on | `0` to turn off the slow layout drift |
 | `remote` | none | Remote-control code (normally set in the settings panel instead) |
 | `nightFrom` | `23` | Hour (0–23) when dimming starts |
@@ -139,7 +140,7 @@ About every six hours (and shortly after start-up) the dashboard checks whether 
 
 ## Remote control from your phone
 
-1. On the iPad open **Settings → Remote control → Turn on**. It shows the address of the remote page, ending in a private code.
+1. On the iPad open **Settings → Remote control → Turn on**. It shows the address of the remote page, ending in a private code, in a box you can select. Use **Copy** or **Share** (the share sheet can send it to your phone by AirDrop, Messages or Notes).
 2. Open that address on your phone (type it in, or send it to yourself in Notes or Messages) and use **Share → Add to Home Screen** to keep it as an app.
 3. The phone page has buttons for: stop adhan, test adhan, black screen on/off, theme, night screen mode, each prayer's alert on/off, refresh data, check the iPad, and reload the app. The iPad confirms each command on the phone.
 
