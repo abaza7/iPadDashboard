@@ -38,6 +38,7 @@ All are free and need no account. The exchange rate is a daily mid-market refere
 | --- | --- |
 | `index.html` | The whole dashboard |
 | `sw.js` | Service worker that makes offline start work |
+| `icons/`, `apple-touch-icon.png` | The Home Screen icon (rainbow arch with a clock) in the sizes iPadOS asks for |
 | `remote.html` | The phone remote control page |
 | `fonts/` | Fraunces and Jost font files plus their license texts. Upload this whole folder |
 | `adhan.mp3` | *Optional.* Your main adhan recording (see below) |
@@ -57,6 +58,7 @@ To update the dashboard, upload the new files. The iPad gets the new version the
 1. Open the site address in **Safari** on the iPad. Add any settings to the address first (see below).
 2. Open the page once with internet so the service worker can save it for offline use.
 3. Tap **Share → Add to Home Screen → Add**, and launch it from the new icon.
+   The icon is the arch-and-clock picture from the `icons` folder. iPadOS copies the icon when you add the page, so if you had added it before the icons existed, delete the old Home Screen icon and add it again.
 4. In **Settings → Display & Brightness → Auto-Lock**, choose **Never**.
 5. In **Settings → Accessibility → Guided Access**, turn it on. Open the dashboard, triple-click the Home button, and start Guided Access to lock the iPad to the page.
 6. Keep the iPad plugged in.

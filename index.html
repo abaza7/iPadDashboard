@@ -6,6 +6,11 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Dashboard">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="apple-touch-icon" sizes="152x152" href="icons/apple-touch-icon-152.png">
+<link rel="apple-touch-icon" sizes="167x167" href="icons/apple-touch-icon-167.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <title>Dashboard</title>
 <style>
   @font-face { font-family: "Fraunces"; src: url(fonts/Fraunces.woff2) format("woff2"); font-weight: 300 700; font-style: normal; font-display: swap; }
@@ -236,7 +241,8 @@
     font-size: 3vmin;
   }
   .ph { display: flex; justify-content: space-between; align-items: center; font-size: 4.2vmin; font-weight: 600; margin-bottom: 2vmin; }
-  .x { background: var(--btn); width: 7vmin; height: 7vmin; border-radius: 50%; font-size: 3.4vmin; }
+  .x { background: var(--btn); width: 7vmin; height: 7vmin; border-radius: 50%; padding: 0; display: flex; align-items: center; justify-content: center; flex: 0 0 auto; }
+  .x svg { width: 55%; height: 55%; display: block; pointer-events: none; }
   .pm { min-height: 3.6vmin; color: var(--accent); font-size: 2.6vmin; margin-bottom: 1vmin; }
   .sec { margin: 3vmin 0 1vmin; color: var(--dim); font-size: 2.6vmin; text-transform: uppercase; letter-spacing: 0.08em; }
   .pills { display: flex; flex-wrap: wrap; margin: 0 -0.8vmin; }
@@ -379,7 +385,7 @@
     nightTo:   parseInt(q.nightTo   || "6", 10)
   };
 
-  var BUILD = "2026-10-19.2";           // bump on every release (used by the update check)
+  var BUILD = "2026-10-19.3";           // bump on every release (used by the update check)
   var RETRY_MS = 5 * 60 * 1000;         // retry failed fetches every 5 minutes
   var ALERTABLE = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"];
   var PRAYER_NAMES = ["Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"];
@@ -1083,7 +1089,7 @@
   }
 
   function renderPanel() {
-    var h = '<div class="ph"><span>Settings</span><button class="x" type="button" data-a="close">✕</button></div>' +
+    var h = '<div class="ph"><span>Settings</span><button class="x" type="button" data-a="close" aria-label="Close"><svg viewBox="0 0 24 24" width="100%" height="100%" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></button></div>' +
       '<div class="pm" id="pmsg"></div>';
     h += '<div class="sec" style="margin-top:0">Play the adhan for</div><div class="pills">';
     ALERTABLE.forEach(function (n) {
