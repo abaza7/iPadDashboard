@@ -14,6 +14,10 @@ No build step, no dependencies, no API keys. The app is `index.html` plus a smal
 - **Offline start:** opens with no internet using the last data it fetched. A month of prayer times is cached, so prayer times and adhan alerts keep working offline
 - **Automatic retry:** any fetch that fails is retried every 5 minutes, and immediately when the iPad comes back online
 - **Themes:** *Boho* (warm cream, terracotta and gold), *Dark boho*, and the original *Midnight*. The default, *Boho (auto)*, switches to Dark boho from **Maghrib until sunrise** using the day's prayer times, and back to the light theme at sunrise
+- **Gold price:** 21k and 24k gold per gram in EGP, with the change since yesterday
+- **Night screen and burn-in protection:** between `nightFrom` and `nightTo` (23:00–06:00 by default) the screen goes black with only a dim clock and the next prayer. Tap it to see the full dashboard for a minute. The whole layout also drifts by a few pixels every few minutes
+- **Remote control:** switch themes, stop the adhan, toggle alerts or blank the screen from your phone (see below)
+- **Update check:** the dashboard notices when a new version is published and updates itself when that can't cost you the adhan sound (see below)
 - Custom fonts: Fraunces for the clock, date and prayer times, Jost for labels. Both are bundled, so there is no internet needed to show them
 - Dims automatically at night, landscape and portrait layouts
 - Plain ES5 JavaScript, so it runs on old Safari
@@ -34,6 +38,7 @@ All are free and need no account. The exchange rate is a daily mid-market refere
 | --- | --- |
 | `index.html` | The whole dashboard |
 | `sw.js` | Service worker that makes offline start work |
+| `remote.html` | The phone remote control page |
 | `fonts/` | Fraunces and Jost font files plus their license texts. Upload this whole folder |
 | `adhan.mp3` | *Optional.* Your main adhan recording (see below) |
 | `adhan-fajr.mp3` | *Optional.* A separate Fajr adhan |
@@ -41,7 +46,7 @@ All are free and need no account. The exchange rate is a daily mid-market refere
 ## Hosting on GitHub Pages
 
 1. Create a **public** repository (for example `iPadDashboard`).
-2. Upload `index.html`, `sw.js`, the `fonts` folder and this README to the repository root. (On github.com choose **Add file → Upload files** and drag the `fonts` folder in as a folder, so the files end up at `fonts/Fraunces.woff2` and so on.)
+2. Upload `index.html`, `remote.html`, `sw.js`, the `fonts` folder and this README to the repository root. (On github.com choose **Add file → Upload files** and drag the `fonts` folder in as a folder, so the files end up at `fonts/Fraunces.woff2` and so on.)
 3. Go to **Settings → Pages**, set **Source** to **Deploy from a branch**, choose `main` and `/ (root)`, then **Save**.
 4. After a minute or two the site is live at `https://<your-username>.github.io/<repo-name>/`.
 
@@ -63,7 +68,7 @@ The audio is not bundled with this project. Adhan recordings are usually copyrig
 **Option A: choose the file on the iPad (recommended).**
 
 1. Save the audio file (mp3, m4a, or wav) to the iPad, for example in the Files app or iCloud Drive.
-2. In the dashboard, tap the pill in the bottom-left corner to open **Adhan alerts**.
+2. In the dashboard, tap the pill in the bottom-left corner to open **Settings**.
 3. Under **Sound**, tap **Choose file** next to *Adhan* and pick your file. Optionally pick a separate *Fajr adhan*.
 4. Turn each prayer on or off with the buttons at the top. A 🔔 or 🔕 icon on each prayer card shows its setting.
 5. Tap **Test adhan** to check the sound and volume.
@@ -101,10 +106,42 @@ https://<your-username>.github.io/iPadDashboard/?city=Alexandria&lat=31.2001&lon
 | `secs` | on | `0` to hide seconds |
 | `prayer` | on | `0` to hide prayer times and adhan |
 | `theme` | `boho` | `boho` (auto day/night), `boho-light`, `boho-dark` or `midnight`. You can also change it in the settings panel |
+| `gold` | on | `0` to hide the gold price |
+| `drift` | on | `0` to turn off the slow layout drift |
+| `remote` | none | Remote-control code (normally set in the settings panel instead) |
 | `nightFrom` | `23` | Hour (0–23) when dimming starts |
 | `nightTo` | `6` | Hour (0–23) when dimming ends |
 
 If you change the address after installing, delete the Home Screen icon and add it again.
+
+## Gold price
+
+Gold comes from the same free rates file as the exchange rate (the XAU gold price converted to your currency), so it needs no extra service. It is shown per gram for 21k (21/24 of the spot price, the common karat in Egypt) and 24k, with the change in 21k since yesterday.
+
+This is the international spot price converted at the day's exchange rate. Jewellers add their own premium, workmanship charges and taxes, so shop prices are higher. Treat it as a reference. Add `?gold=0` to hide it.
+
+## Night screen and burn-in protection
+
+- From `nightFrom` to `nightTo` (default 23:00–06:00) the screen turns black and shows only a dim clock and the next prayer. Tap the screen to see everything for a minute; it then goes black again. Adhan alerts still appear on top.
+- In **Settings → Night screen** you can choose *Black + dim clock*, *Dim only* (the old behavior) or *Off*.
+- Every few minutes the whole layout moves by a few pixels, so no element sits on exactly the same pixels all day. Use `?drift=0` to turn that off.
+- The iPad Air 2 has an LCD screen, which does not burn in like OLED, but it can show faint image retention. This helps with that. The backlight stays on, so the iPad still uses a little power, so lower the brightness in Control Center at night if you want.
+
+## Updates
+
+About every six hours (and shortly after start-up) the dashboard checks whether a new version has been published.
+
+- When one is found the pill at the bottom-left says **Update ready – tap here**. Open it and tap **Update now**.
+- It also updates by itself at night, but only if that can't cost you the adhan sound. iPadOS only allows sound after you tap the screen once each time the page loads, so a reload silences the adhan until the next tap. Therefore the automatic update runs only if sound is not currently enabled, or no prayer alerts are switched on. Otherwise it waits for you to tap.
+- After any reload, tap the screen once to re-enable sound.
+
+## Remote control from your phone
+
+1. On the iPad open **Settings → Remote control → Turn on**. It shows the address of the remote page, ending in a private code.
+2. Open that address on your phone (type it in, or send it to yourself in Notes or Messages) and use **Share → Add to Home Screen** to keep it as an app.
+3. The phone page has buttons for: stop adhan, test adhan, black screen on/off, theme, night screen mode, each prayer's alert on/off, refresh data, check the iPad, and reload the app. The iPad confirms each command on the phone.
+
+How it works: the phone and the iPad both use a free message relay, [ntfy.sh](https://ntfy.sh). The code is the name of a private topic. Anyone who learns the code can send these commands, so keep it private and use **New code** in the settings if it leaks. The iPad must be awake and online with the dashboard open. The commands cannot delete anything or change the data sources.
 
 ## Offline behavior and retries
 

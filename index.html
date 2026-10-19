@@ -76,13 +76,15 @@
     font: inherit; color: inherit; border: 0; margin: 0;
     -webkit-appearance: none; appearance: none; cursor: pointer;
   }
+  .wrap, .chip, .status { transform: translate(var(--dx, 0px), var(--dy, 0px)); }
   .wrap {
     height: 100%;
     display: flex;
     flex-direction: column;
     padding: 4vmin 5vmin 8.5vmin;
-    transition: opacity 1s;
+    transition: opacity 1s, transform 60s linear;
   }
+  .chip, .status { transition: transform 60s linear; }
   body.night .wrap { opacity: var(--night-op); }
   body.night .chip, body.night .status { opacity: 0.5; }
 
@@ -96,7 +98,7 @@
   }
   .clock {
     font-family: var(--font-clock);
-    font-size: 26vmin;
+    font-size: 23.5vmin;
     font-weight: var(--clock-weight);
     line-height: 1;
     letter-spacing: -0.02em;
@@ -110,18 +112,22 @@
   html[data-theme^="boho"] .date { font-family: var(--font-clock); font-style: italic; font-variant-numeric: lining-nums; }
   .fx {
     display: inline-block;
-    margin-top: 2vmin;
-    padding: 1vmin 2.2vmin;
+    margin-top: 1.6vmin;
+    padding: 0.8vmin 2.2vmin;
     border-radius: 2vmin;
     background: var(--card);
-    font-size: 3.4vmin;
+    font-size: 3.1vmin;
     line-height: 1.2;
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
   }
-  html[data-theme^="boho"] .fx { border-radius: 6vmin; padding: 1vmin 3vmin; }
+  html[data-theme^="boho"] .fx { border-radius: 6vmin; padding: 0.8vmin 2.6vmin; }
+  .chips .fx { display: block; width: -webkit-fit-content; width: fit-content; }
+  .chips .fx + .fx { margin-top: 1vmin; }
   .fx .pair { color: var(--dim); margin-right: 1.4vmin; }
-  .fx .chg { color: var(--dim); margin-left: 1.4vmin; font-size: 2.8vmin; }
+  .fx .karat { color: var(--dim); font-size: 2.5vmin; margin: 0 0.5vmin 0 0; }
+  .fx .sepd { color: var(--dim); margin: 0 0.9vmin; }
+  .fx .chg { color: var(--dim); margin-left: 1.2vmin; font-size: 2.6vmin; }
 
   .now { text-align: right; max-width: 44vmin; min-width: 0; }
   .now .icon { font-size: 16vmin; line-height: 1; }
@@ -143,7 +149,7 @@
   html[data-theme^="boho"] .now .desc { font-size: 3.2vmin; margin-top: 1vmin; }
   html[data-theme^="boho"] .now .meta { font-size: 2.5vmin; margin-top: 0.6vmin; }
   html[data-theme^="boho"] .top { padding-bottom: 3.4vmin; }
-  html[data-theme^="boho"] .clock { font-size: 23vmin; }
+  html[data-theme^="boho"] .clock { font-size: 22vmin; }
   html[data-theme^="boho"] .date { margin-top: 1.4vmin; }
   html[data-theme^="boho"] .now .desc, html[data-theme^="boho"] .now .meta { line-height: 1.25; }
   html[data-theme^="boho"] .prayers { margin-top: 2.2vmin; }
@@ -251,6 +257,19 @@
   .btns .btn { margin: 0 1.4vmin 1.4vmin 0; }
   .note { margin-top: 2vmin; color: var(--dim); font-size: 2.3vmin; line-height: 1.4; }
 
+  /* ---------- night: black clock screen ---------- */
+  .sleep {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 8;
+    background: #000; display: flex; align-items: center; justify-content: center;
+    text-align: center; cursor: pointer;
+  }
+  .sleep .sl-in { transform: translate(var(--dx, 0px), var(--dy, 0px)); transition: transform 60s linear; }
+  .sleep .sl-clock { font-family: var(--font-clock); font-weight: var(--clock-weight); font-size: 26vmin; line-height: 1; color: #f4e8d4; opacity: 0.3; letter-spacing: -0.02em; font-variant-numeric: lining-nums tabular-nums; white-space: nowrap; }
+  .sleep .sl-clock .ampm { font-family: var(--font-ui); font-size: 6vmin; font-weight: 300; margin-left: 1.5vmin; letter-spacing: 0; }
+  .sleep .sl-next { margin-top: 3vmin; font-size: 3.4vmin; color: #f4e8d4; opacity: 0.26; }
+  .note a, .note code { word-break: break-all; color: var(--accent); font-style: normal; }
+  .note .tp { display: block; font-size: 3.4vmin; color: var(--accent); letter-spacing: 0.04em; margin: 0.6vmin 0; }
+
   /* ---------- adhan alert ---------- */
   .alert {
     position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 30;
@@ -279,6 +298,10 @@
     html[data-theme^="boho"] .top { padding-bottom: 0; }
     html[data-theme^="boho"] .prayers { margin-top: 3vmin; }
     html[data-theme^="boho"] .fx { margin-top: 1.2vmin; }
+    .chips { display: flex; justify-content: center; flex-wrap: wrap; }
+    .chips .fx, .chips .fx + .fx { margin: 1.2vmin 0.6vmin 0; font-size: 2.8vmin; padding: 0.8vmin 1.8vmin; }
+    .fx .karat { font-size: 2.3vmin; }
+    .fx .pair { margin-right: 1vmin; }
     html[data-theme^="boho"] .now .meta { font-size: 2.3vmin; }
     html[data-theme^="boho"] .fc { padding: 0.8vmin 1vmin; }
     html[data-theme^="boho"] .now .ic .cf { fill: var(--bg); }
@@ -298,7 +321,7 @@
       <div class="clock" id="clock">--:--</div>
       <div class="date" id="date"></div>
       <div class="hijri" id="hijri"></div>
-      <div class="fx" id="fx" hidden></div>
+      <div class="chips"><div class="fx" id="fx" hidden></div><div class="fx gold" id="gold" hidden></div></div>
     </div>
     <div class="now">
       <div class="icon" id="wIcon"></div>
@@ -324,6 +347,8 @@
 </div>
 
 
+<div class="sleep" id="sleep" hidden><div class="sl-in"><div class="sl-clock" id="slClock"></div><div class="sl-next" id="slNext"></div></div></div>
+
 <script>
 (function () {
   "use strict";
@@ -346,12 +371,15 @@
     secs:   q.secs !== "0",             // show seconds
     prayer: q.prayer !== "0",           // show prayer row
     fx:     q.fx !== "0",               // show exchange rate
+    gold:   q.gold !== "0",             // show gold price per gram (needs the exchange rate)
+    drift:  q.drift !== "0",            // slowly shift the layout a few pixels
     from:   (q.from || "USD").toUpperCase(),
     to:     (q.to   || "EGP").toUpperCase(),
     nightFrom: parseInt(q.nightFrom || "23", 10),
     nightTo:   parseInt(q.nightTo   || "6", 10)
   };
 
+  var BUILD = "2026-10-19.2";           // bump on every release (used by the update check)
   var RETRY_MS = 5 * 60 * 1000;         // retry failed fetches every 5 minutes
   var ALERTABLE = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"];
   var PRAYER_NAMES = ["Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"];
@@ -439,8 +467,52 @@
     var night = CFG.nightFrom > CFG.nightTo
       ? (hr >= CFG.nightFrom || hr < CFG.nightTo)
       : (hr >= CFG.nightFrom && hr < CFG.nightTo);
-    document.body.className = night ? "night" : "";
+    document.body.className = (night && nightMode !== "off") ? "night" : "";
+    setSleep((night && nightMode === "black" && Date.now() >= wakeUntil) || sleepForced, d);
   }
+
+  // ---------- night screen: black with a dim clock (tap to wake for a minute) ----------
+  var NIGHT_MODES = ["black", "dim", "off"];
+  var nightMode = load("nightmode");
+  if (NIGHT_MODES.indexOf(nightMode) < 0) nightMode = "black";
+  var wakeUntil = 0, sleepForced = false;
+  var nextInfo = null;       // { name, time } of the next prayer, kept by tickPrayer()
+
+  function hmText(d) {
+    var h = d.getHours(), ap = "";
+    if (CFG.h12) { ap = h >= 12 ? " PM" : " AM"; h = h % 12 || 12; }
+    return (CFG.h12 ? h : pad(h)) + ":" + pad(d.getMinutes()) + ap;
+  }
+  function setSleep(on, d) {
+    var el = $("sleep");
+    if (el.hidden === !on) {
+      if (on) renderSleepText(d);
+      return;
+    }
+    el.hidden = !on;
+    if (on) renderSleepText(d);
+  }
+  function renderSleepText(d) {
+    var h = d.getHours(), ap = "";
+    if (CFG.h12) { ap = h >= 12 ? "PM" : "AM"; h = h % 12 || 12; }
+    $("slClock").innerHTML = (CFG.h12 ? h : pad(h)) + ":" + pad(d.getMinutes()) + (ap ? '<span class="ampm">' + ap + "</span>" : "");
+    var t = "";
+    if (nextInfo && nextInfo.time) {
+      var mins = Math.max(0, Math.round((nextInfo.time - d) / 60000));
+      t = nextInfo.name + " " + hmText(nextInfo.time) + " · in " + (mins >= 60 ? Math.floor(mins / 60) + "h " : "") + (mins % 60) + "m";
+    }
+    $("slNext").textContent = t;
+  }
+  $("sleep").addEventListener("click", function () { wakeUntil = Date.now() + 60 * 1000; sleepForced = false; renderClock(); });
+
+  // ---------- burn-in protection: the whole layout creeps a few pixels every few minutes ----------
+  var DRIFT = [[0, 0], [0.7, 0.4], [-0.4, 0.8], [-0.8, -0.3], [0.3, -0.7], [0.8, 0.6], [-0.6, -0.6], [0.5, 0.1]];
+  var driftI = Math.floor(Math.random() * DRIFT.length);
+  function drift() {
+    var pt = DRIFT[driftI++ % DRIFT.length], st = document.documentElement.style;
+    st.setProperty("--dx", pt[0] + "vmin"); st.setProperty("--dy", pt[1] + "vmin");
+  }
+  if (CFG.drift) { drift(); setInterval(drift, 3 * 60 * 1000); }
 
   // ---------- weather (Open-Meteo, no API key) ----------
   var WX = {
@@ -545,14 +617,34 @@
   }
 
   // ---------- exchange rate (free, no key; daily reference rate) ----------
+  function fmtInt(n) { return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ","); }
+  var OZ_G = 31.1034768;   // grams in a troy ounce
+
   function renderFX(fx) {
     var el = $("fx");
-    if (!CFG.fx || !fx || !(fx.rate > 0)) { el.hidden = true; return; }
+    if (!CFG.fx || !fx || !(fx.rate > 0)) { el.hidden = true; renderGold(null); return; }
     var html = '<span class="pair">' + esc(fx.from) + "/" + esc(fx.to) + "</span>" + fx.rate.toFixed(2);
     if (typeof fx.prev === "number") {
       var diff = fx.rate - fx.prev;
       var arrow = diff > 0.004 ? "▲" : (diff < -0.004 ? "▼" : "–");
       html += '<span class="chg">' + arrow + " " + Math.abs(diff).toFixed(2) + "</span>";
+    }
+    el.innerHTML = html;
+    el.hidden = false;
+    renderGold(fx);
+  }
+
+  // gold per gram in the local currency: spot price from the same rates file (24k), 21k = 21/24 of it
+  function renderGold(fx) {
+    var el = $("gold");
+    if (!CFG.gold || !fx || !(fx.oz > 0)) { el.hidden = true; return; }
+    var g24 = fx.oz / OZ_G, g21 = g24 * 21 / 24;
+    var html = '<span class="pair">Gold/g</span>' +
+      '<span class="karat">21k</span>' + fmtInt(g21) + '<span class="sepd">·</span>' +
+      '<span class="karat">24k</span>' + fmtInt(g24);
+    if (fx.ozPrev > 0) {
+      var d = (fx.oz - fx.ozPrev) / OZ_G * 21 / 24;
+      html += '<span class="chg">' + (d > 0.5 ? "▲" : (d < -0.5 ? "▼" : "–")) + " " + fmtInt(Math.abs(d)) + "</span>";
     }
     el.innerHTML = html;
     el.hidden = false;
@@ -565,7 +657,8 @@
     function pick(j) {
       var rate = j && j[f] && j[f][t];
       if (typeof rate !== "number" || !(rate > 0)) throw new Error("bad rate");
-      return { rate: rate, date: j.date || null };
+      var xau = j[f].xau, oz = (typeof xau === "number" && xau > 0) ? rate / xau : 0;   // price of 1 troy oz in the local currency
+      return { rate: rate, date: j.date || null, oz: oz };
     }
     function latest() {
       return getJSON(jsd + "latest/v1/currencies/" + f + ".json").then(pick)
@@ -576,7 +669,8 @@
           return getJSON("https://open.er-api.com/v6/latest/" + CFG.from).then(function (j) {
             var r = j && j.rates && j.rates[CFG.to];
             if (typeof r !== "number" || !(r > 0)) throw new Error("bad rate");
-            return { rate: r, date: null };
+            var x = j.rates.XAU;
+            return { rate: r, date: null, oz: (typeof x === "number" && x > 0) ? r / x : 0 };
           });
         });
     }
@@ -586,7 +680,7 @@
       d.setUTCDate(d.getUTCDate() - 1);
       var ds = d.getUTCFullYear() + "-" + pad(d.getUTCMonth() + 1) + "-" + pad(d.getUTCDate());
       return getJSON(jsd + ds + "/v1/currencies/" + f + ".json").then(function (p) {
-        try { cur.prev = pick(p).rate; } catch (e) {}
+        try { var pk = pick(p); cur.prev = pk.rate; cur.ozPrev = pk.oz; } catch (e) {}
         return cur;
       }).catch(function () { return cur; });
     }).then(function (fx) {
@@ -720,6 +814,7 @@
       var td = prayerDays[dmy(tom)];
       if (td && td.t.Fajr) { nextIdx = 0; nextTime = atTime(tom, td.t.Fajr); }
     }
+    nextInfo = nextIdx >= 0 ? { name: prayerEls[nextIdx].name, time: nextTime } : null;
     for (i = 0; i < prayerEls.length; i++) {
       var p = prayerEls[i];
       var cls = "pr";
@@ -967,7 +1062,8 @@
     var chip = $("chip"), txt, warn = false;
     if (!CFG.prayer) { chip.hidden = true; return; }
     chip.hidden = false;
-    if (!sounds.main && !sounds.fajr) { txt = "⚠️ Adhan: choose a sound"; warn = true; }
+    if (updateReady) { txt = "🔄 Update ready – tap here"; warn = true; }
+    else if (!sounds.main && !sounds.fajr) { txt = "⚠️ Adhan: choose a sound"; warn = true; }
     else if (!unlocked) { txt = "🔇 Tap once to enable adhan sound"; warn = true; }
     else if (!alertCount()) { txt = "🔕 Adhan off"; }
     else { txt = "🔔 Adhan on · " + alertCount() + " of 5"; }
@@ -987,23 +1083,34 @@
   }
 
   function renderPanel() {
-    var h = '<div class="ph"><span>Adhan alerts</span><button class="x" type="button" data-a="close">✕</button></div>' +
+    var h = '<div class="ph"><span>Settings</span><button class="x" type="button" data-a="close">✕</button></div>' +
       '<div class="pm" id="pmsg"></div>';
     h += '<div class="sec" style="margin-top:0">Play the adhan for</div><div class="pills">';
     ALERTABLE.forEach(function (n) {
       h += '<button class="sw' + (alerts[n] ? " on" : "") + '" type="button" data-a="tog" data-n="' + n + '">' +
         (alerts[n] ? "🔔 " : "🔕 ") + n + "</button>";
     });
-    h += '</div><div class="sec">Theme</div><div class="pills">';
+    h += '</div>';
+    if (updateReady) {
+      h += '<div class="sec">Update</div><div class="srow"><div class="sl"><b>A new version is ready</b><small>The app reloads. Afterwards tap the screen once to re-enable adhan sound.</small></div>' +
+        '<div class="sb"><button class="btn pri" type="button" data-a="apply">Update now</button></div></div>';
+    }
+    h += '<div class="sec">Theme</div><div class="pills">';
     [["boho", "Boho (auto day/night)"], ["boho-light", "Boho light"], ["boho-dark", "Dark boho"], ["midnight", "Midnight"]].forEach(function (th) {
       h += '<button class="sw' + (themePref === th[0] ? " on" : "") + '" type="button" data-a="theme" data-v="' + th[0] + '">' + th[1] + "</button>";
     });
-    h += '</div><div class="sec">Sound</div>' +
+    h += '</div><div class="sec">Night screen (' + pad(CFG.nightFrom) + ':00 – ' + pad(CFG.nightTo) + ':00)</div><div class="pills">';
+    [["black", "Black + dim clock"], ["dim", "Dim only"], ["off", "Off"]].forEach(function (nm) {
+      h += '<button class="sw' + (nightMode === nm[0] ? " on" : "") + '" type="button" data-a="night" data-v="' + nm[0] + '">' + nm[1] + "</button>";
+    });
+    h += '</div><div class="note">Black screen: only a dim clock and the next prayer show, and the layout drifts slightly to protect the screen. Tap it to see everything for a minute.</div>';
+    h += '<div class="sec">Sound</div>' +
       soundRow("main", "Adhan", "Plays for every enabled prayer") +
       soundRow("fajr", "Fajr adhan (optional)", "If empty, Fajr uses the main adhan") +
       '<div class="btns"><button class="btn pri" type="button" data-a="test" data-n="Dhuhr">▶ Test adhan</button>' +
       (sounds.fajr ? '<button class="btn" type="button" data-a="test" data-n="Fajr">▶ Test Fajr adhan</button>' : "") +
       '<button class="btn ghost" type="button" data-a="close">Close</button></div>' +
+      '<div class="sec">Remote control</div>' + remoteHTML() +
       '<div class="note">Files you choose are stored only on this iPad. Sound plays through the iPad speaker at its current volume; ' +
       "if you hear nothing, check the volume and the side switch. After the app is reopened, tap the screen once to re-enable sound.</div>";
     $("card").innerHTML = h;
@@ -1022,6 +1129,15 @@
     else if (a === "tog") {
       alerts[n] = !alerts[n]; store("alerts", alerts);
       renderPanel(); renderBells(); updateChip();
+    } else if (a === "night") {
+      nightMode = t.getAttribute("data-v"); store("nightmode", nightMode);
+      wakeUntil = 0; renderClock(); renderPanel();
+    } else if (a === "rgen") {
+      setRemote(newTopic()); renderPanel();
+    } else if (a === "roff") {
+      setRemote(""); renderPanel();
+    } else if (a === "apply") {
+      location.reload();
     } else if (a === "theme") {
       themePref = t.getAttribute("data-v"); store("theme", themePref);
       curTheme = ""; applyTheme(); renderPanel();
@@ -1064,8 +1180,121 @@
     fr.readAsArrayBuffer(f);
   });
 
+  // ---------- updates: look for a new version; reload by itself only when that can't cost the adhan sound ----------
+  var updateReady = false, pageStart = Date.now();
+  function checkUpdate() {
+    if (navigator.onLine === false) return;
+    fetch("index.html?chk=" + Date.now(), { cache: "no-store" }).then(function (r) {
+      return r.ok ? r.text() : "";
+    }).then(function (txt) {
+      var m = /var BUILD = "([^"]+)"/.exec(txt || "");
+      if (m && m[1] !== BUILD && !updateReady) { updateReady = true; updateChip(); }
+    }).catch(function () {});
+  }
+  function prayerSoon(d, mins) {
+    var i;
+    for (i = 0; i < prayerEls.length; i++) {
+      var t = prayerEls[i].time;
+      if (t && Math.abs(t - d) < mins * 60000) return true;
+    }
+    return false;
+  }
+  function maybeAutoRefresh(d) {
+    if (!updateReady || d.getSeconds() !== 0) return;
+    if (Date.now() - pageStart < 10 * 60 * 1000) return;
+    var hr = d.getHours();
+    var night = CFG.nightFrom > CFG.nightTo ? (hr >= CFG.nightFrom || hr < CFG.nightTo) : (hr >= CFG.nightFrom && hr < CFG.nightTo);
+    if (!night || !$("alert").hidden || !$("panel").hidden || prayerSoon(d, 15)) return;
+    // reloading drops iPadOS's "sound allowed" state, so only do it if adhan sound isn't armed (or no alerts are on)
+    if (unlocked && alertCount()) return;
+    location.reload();
+  }
+  setTimeout(checkUpdate, 20 * 1000);
+  setInterval(checkUpdate, 6 * 60 * 60 * 1000);
+
+  // ---------- remote control through ntfy.sh (free relay): phone page -> topic -> this iPad ----------
+  var remoteTopic = "", remoteES = null, remoteState = "off", seenMsg = {};
+  function newTopic() {
+    var a = "abcdefghjkmnpqrstuvwxyz23456789", out = "", i, r;
+    try { r = new Uint8Array(16); crypto.getRandomValues(r); } catch (e) { r = []; for (i = 0; i < 16; i++) r.push(Math.floor(Math.random() * 256)); }
+    for (i = 0; i < 16; i++) { out += a.charAt(r[i] % a.length); if (i % 4 === 3 && i < 15) out += "-"; }
+    return out;
+  }
+  function cleanTopic(t) { return String(t || "").replace(/[^A-Za-z0-9_-]/g, "").slice(0, 64); }
+  function remoteSend(text) {
+    if (!remoteTopic) return;
+    try { fetch("https://ntfy.sh/" + remoteTopic, { method: "POST", body: text }).catch(function () {}); } catch (e) {}
+  }
+  function remoteClose() { if (remoteES) { try { remoteES.close(); } catch (e) {} remoteES = null; } }
+  function setRemote(t) {
+    remoteTopic = cleanTopic(t);
+    store("remote", remoteTopic);
+    remoteClose(); seenMsg = {};
+    remoteState = remoteTopic ? "connecting" : "off";
+    if (remoteTopic) remoteConnect();
+  }
+  function remoteConnect() {
+    if (!remoteTopic || !window.EventSource) return;
+    remoteClose();
+    try {
+      remoteES = new EventSource("https://ntfy.sh/" + remoteTopic + "/sse");
+      remoteES.onopen = function () { remoteState = "on"; var e = $("rstate"); if (e) e.textContent = remoteLabel(); };
+      remoteES.onerror = function () { remoteState = "retry"; var e = $("rstate"); if (e) e.textContent = remoteLabel(); };
+      remoteES.addEventListener("message", function (ev) {
+        var m; try { m = JSON.parse(ev.data); } catch (x) { return; }
+        if (!m || (m.event && m.event !== "message") || !m.message) return;
+        if (m.id) { if (seenMsg[m.id]) return; seenMsg[m.id] = 1; }
+        if (m.time && Math.abs(Date.now() / 1000 - m.time) > 120) return;      // ignore anything replayed late
+        runCommand(String(m.message));
+      });
+    } catch (e) {}
+  }
+  setInterval(function () { if (remoteTopic && (!remoteES || remoteES.readyState === 2)) remoteConnect(); }, 60 * 1000);
+
+  function remoteLabel() { return remoteState === "on" ? "Connected" : (remoteState === "retry" ? "Reconnecting…" : (remoteState === "connecting" ? "Connecting…" : "Off")); }
+  function remoteURL() { try { return new URL("remote.html", location.href).href + "#" + remoteTopic; } catch (e) { return "remote.html#" + remoteTopic; } }
+  function remoteHTML() {
+    if (!remoteTopic) {
+      return '<div class="srow"><div class="sl"><b>Control from your phone</b><small>Uses the free ntfy.sh relay. Needs internet on both devices.</small></div>' +
+        '<div class="sb"><button class="btn pri" type="button" data-a="rgen">Turn on</button></div></div>';
+    }
+    return '<div class="srow"><div class="sl"><b>Remote is on</b><small id="rstate">' + remoteLabel() + '</small></div>' +
+      '<div class="sb"><button class="btn" type="button" data-a="rgen">New code</button><button class="btn ghost" type="button" data-a="roff">Turn off</button></div></div>' +
+      '<div class="note">On your phone open:<span class="tp">' + esc(remoteURL()).replace("#", "<wbr>#") + '</span>Anyone with this code can send commands, so keep it private. “New code” replaces it.</div>';
+  }
+
+  // commands: stop, test, theme <x>, night <black|dim|off>, sleep, wake, alert <prayer> <on|off>, refresh, reload, ping
+  function runCommand(text) {
+    var w = text.trim().toLowerCase().split(/\s+/), c = w[0], ack = "";
+    if (c === "ack:" || /^ack/.test(c)) return;
+    if (c === "stop") { stopAdhan(); ack = "adhan stopped"; }
+    else if (c === "test") { playAdhan("Dhuhr", true); ack = "testing adhan"; }
+    else if (c === "theme" && THEMES.indexOf(w[1]) >= 0) {
+      themePref = w[1]; store("theme", themePref); curTheme = ""; applyTheme();
+      if (!$("panel").hidden) renderPanel();
+      ack = "theme " + w[1];
+    } else if (c === "night" && NIGHT_MODES.indexOf(w[1]) >= 0) {
+      nightMode = w[1]; store("nightmode", nightMode); wakeUntil = 0; renderClock();
+      if (!$("panel").hidden) renderPanel();
+      ack = "night screen: " + w[1];
+    } else if (c === "sleep") { sleepForced = true; renderClock(); ack = "black screen on"; }
+    else if (c === "wake") { sleepForced = false; wakeUntil = Date.now() + 30 * 60 * 1000; renderClock(); ack = "awake"; }
+    else if (c === "alert" && w.length >= 3) {
+      var nm = w[1].charAt(0).toUpperCase() + w[1].slice(1);
+      if (ALERTABLE.indexOf(nm) >= 0 && (w[2] === "on" || w[2] === "off")) {
+        alerts[nm] = w[2] === "on"; store("alerts", alerts);
+        if (!$("panel").hidden) renderPanel();
+        renderBells(); updateChip(); ack = nm + " alert " + w[2];
+      }
+    } else if (c === "refresh") { jobs.forEach(function (j) { j.run(); }); ack = "refreshing data"; }
+    else if (c === "reload") { remoteSend("ack: reloading (tap the iPad once afterwards)"); setTimeout(function () { location.reload(); }, 800); return; }
+    else if (c === "ping") { ack = "online " + hhmm(new Date()) + " · sound " + (unlocked ? "ready" : "needs a tap") + " · " + BUILD; }
+    if (ack) remoteSend("ack: " + ack);
+  }
+
   // ---------- start-up ----------
   prunePrayerDays();
+  setRemote(q.remote || load("remote") || "");
   applyTheme();
   var cw = load("weather"); if (cw) renderWeather(cw);
   var cf = load("fx"); if (cf) renderFX(cf);
@@ -1082,6 +1311,7 @@
     renderClock();
     applyTheme();
     checkAdhan(d);
+    maybeAutoRefresh(d);
     if (d.getDate() !== lastDay) {          // new day: rebuild rows from cache, then refresh
       lastDay = d.getDate();
       buildPrayer();
