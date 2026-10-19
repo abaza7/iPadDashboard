@@ -293,6 +293,21 @@
   .alert .as { font-size: 3.6vmin; color: var(--dim); margin-top: 1.5vmin; min-height: 4vmin; }
   .alert .btn { margin: 5vmin 0 0; padding: 2.4vmin 7vmin; font-size: 4vmin; }
 
+  /* ---------- notification banner (ntfy) ---------- */
+  .toast {
+    position: fixed; top: 2.5vmin; left: 50%; width: 86vmin; max-width: 92vw; margin-left: -43vmin; z-index: 12;
+    background: var(--panel); color: var(--fg); border-radius: 2.6vmin; padding: 2vmin 3vmin;
+    box-shadow: 0 1vmin 4vmin rgba(0,0,0,.45); border-left: 1.2vmin solid var(--accent);
+    font-size: 2.8vmin; line-height: 1.3;
+  }
+  .toast.hi { border-left-color: var(--warn); }
+  .toast b { display: block; font-weight: 600; font-size: 3.2vmin; }
+  .toast span { display: block; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
+  .toast small { display: block; color: var(--dim); font-size: 2vmin; margin-top: .6vmin; }
+  .nlist { margin-top: 1vmin; }
+  .nitem { padding: 1.2vmin 0; border-bottom: 1px solid var(--line); font-size: 2.6vmin; }
+  .nitem small { display: block; color: var(--dim); font-size: 2.1vmin; }
+
   /* ---------- portrait ---------- */
   @media (orientation: portrait) {
     .top { flex-direction: column; justify-content: center; }
@@ -347,6 +362,7 @@
 
 <button class="chip" id="chip" type="button"></button>
 <div class="status" id="status"></div>
+<div class="toast" id="toast" hidden></div>
 
 <div class="panel" id="panel" hidden><div class="card" id="card"></div></div>
 
@@ -390,7 +406,7 @@
     nightTo:   parseInt(q.nightTo   || "6", 10)
   };
 
-  var BUILD = "2026-10-19.5";           // bump on every release (used by the update check)
+  var BUILD = "2026-10-19.8";           // bump on every release (used by the update check)
   var RETRY_MS = 5 * 60 * 1000;         // retry failed fetches every 5 minutes
   var ALERTABLE = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"];
   var PRAYER_NAMES = ["Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"];
@@ -967,6 +983,7 @@
     return URL.createObjectURL(new Blob([buf], { type: "audio/wav" }));
   }
   var silentUrl = null;
+  var chime = new Audio(), chimeUrl = null, nUnread = 0;
   function unlockAudio() {
     if (unlocked) return;
     try {
@@ -976,6 +993,7 @@
       if (p && p.then) {
         p.then(function () { unlocked = true; updateChip(); }, function () {});
       }
+      try { chime.src = silentUrl; var p2 = chime.play(); if (p2 && p2.catch) p2.catch(function () {}); } catch (e2) {}
     } catch (e) {}
   }
   function firstTap() {
@@ -1079,6 +1097,7 @@
     else if (!unlocked) { txt = "🔇 Tap once to enable adhan sound"; warn = true; }
     else if (!alertCount()) { txt = "🔕 Adhan off"; }
     else { txt = "🔔 Adhan on · " + alertCount() + " of 5"; }
+    if (nUnread) txt += " · ✉ " + nUnread;
     chip.textContent = txt;
     chip.className = "chip" + (warn ? " warn" : "");
   }
@@ -1122,12 +1141,14 @@
       '<div class="btns"><button class="btn pri" type="button" data-a="test" data-n="Dhuhr">▶ Test adhan</button>' +
       (sounds.fajr ? '<button class="btn" type="button" data-a="test" data-n="Fajr">▶ Test Fajr adhan</button>' : "") +
       '<button class="btn ghost" type="button" data-a="close">Close</button></div>' +
+      '<div class="sec">Notifications</div>' + notifHTML() +
+      '<div class="sec">Maintenance</div>' + maintHTML() +
       '<div class="sec">Remote control</div>' + remoteHTML() +
       '<div class="note">Files you choose are stored only on this iPad. Sound plays through the iPad speaker at its current volume; ' +
       "if you hear nothing, check the volume and the side switch. After the app is reopened, tap the screen once to re-enable sound.</div>";
     $("card").innerHTML = h;
   }
-  function openPanel() { renderPanel(); $("panel").hidden = false; }
+  function openPanel() { nUnread = 0; updateChip(); renderPanel(); $("panel").hidden = false; }
   function closePanel() { $("panel").hidden = true; }
 
   $("chip").addEventListener("click", openPanel);
@@ -1156,6 +1177,19 @@
       setRemote(""); renderPanel();
     } else if (a === "apply") {
       location.reload();
+    } else if (a === "nadd") {
+      nAdd(($("ntin") || {}).value);
+    } else if (a === "ndel") {
+      nTopics.splice(+n, 1); store("ntopics", nTopics); nReset(); renderPanel();
+    } else if (a === "nmin") {
+      nMin = +t.getAttribute("data-v"); store("nmin", nMin); renderPanel();
+    } else if (a === "nclear") {
+      nLog = []; store("nlog", nLog); renderPanel();
+    } else if (a === "ntest") {
+      nHandle({ id: "t" + Date.now(), time: Math.floor(Date.now() / 1000), topic: "preview", title: "Preview", message: "This is how a notification looks.", priority: 3, tags: ["bell"] }, true);
+      closePanel();
+    } else if (a === "weekly") {
+      weekly = !weekly; store("weekly", weekly); renderPanel();
     } else if (a === "theme") {
       themePref = t.getAttribute("data-v"); store("theme", themePref);
       curTheme = ""; applyTheme(); renderPanel();
@@ -1381,6 +1415,152 @@
     if (ack) remoteSend("ack: " + ack);
   }
 
+  // ---------- notifications from ntfy.sh topics (for example the Pi's alerts), shown as banners ----------
+  var nTopics = load("ntopics") || [], nMin = load("nmin") || 1, nLog = load("nlog") || [], nIds = load("nids") || [];
+  var nES = null, nState = nTopics.length ? "connecting" : "off", nSince = 0, nErr = "", toastTimer = null, nMsg = "";
+  var weekly = load("weekly") !== false;
+  var TAGICON = { warning: "⚠️", rotating_light: "🚨", white_check_mark: "✅", heavy_check_mark: "✅", x: "❌", tada: "🎉", skull: "💀",
+    inbox_tray: "📥", arrow_down: "⬇️", movie_camera: "🎬", clapper: "🎬", bell: "🔔", package: "📦", fire: "🔥", lock: "🔒", thermometer: "🌡️", electric_plug: "🔌" };
+  function beepUrl() {
+    var rate = 11025, n = Math.floor(rate * 0.5), buf = new ArrayBuffer(44 + n * 2), v = new DataView(buf), i;
+    function w(o, str) { for (var k = 0; k < str.length; k++) v.setUint8(o + k, str.charCodeAt(k)); }
+    w(0, "RIFF"); v.setUint32(4, 36 + n * 2, true); w(8, "WAVE"); w(12, "fmt ");
+    v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+    v.setUint32(24, rate, true); v.setUint32(28, rate * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true);
+    w(36, "data"); v.setUint32(40, n * 2, true);
+    for (i = 0; i < n; i++) {
+      var tt = i / rate, f = tt < 0.22 ? 880 : 1175, env = Math.max(0, 1 - ((tt % 0.25) / 0.25)) * 0.6;
+      v.setInt16(44 + i * 2, Math.round(Math.sin(2 * Math.PI * f * tt) * env * 20000), true);
+    }
+    return URL.createObjectURL(new Blob([buf], { type: "audio/wav" }));
+  }
+  function playChime() {
+    if (!unlocked || !audio.paused) return;
+    try { if (!chimeUrl) chimeUrl = beepUrl(); chime.src = chimeUrl; var p = chime.play(); if (p && p.catch) p.catch(function () {}); } catch (e) {}
+  }
+  function nIcon(e) {
+    var i;
+    for (i = 0; i < (e.tags || []).length; i++) if (TAGICON[e.tags[i]]) return TAGICON[e.tags[i]];
+    return e.p >= 5 ? "🚨" : e.p >= 4 ? "❗" : "🔔";
+  }
+  function nToast(e) {
+    var el = $("toast");
+    el.className = "toast" + (e.p >= 4 ? " hi" : "");
+    el.innerHTML = "<b>" + nIcon(e) + " " + esc(e.title || e.topic || "Notification") + "</b>" + (e.msg ? "<span>" + esc(e.msg) + "</span>" : "") +
+      "<small>" + hhmm(new Date(e.t)) + (e.topic ? " · " + esc(e.topic) : "") + "</small>";
+    el.hidden = false;
+    clearTimeout(toastTimer);
+    if (e.p < 4) toastTimer = setTimeout(function () { el.hidden = true; }, 20000);
+  }
+  $("toast").addEventListener("click", function () { $("toast").hidden = true; clearTimeout(toastTimer); nUnread = 0; updateChip(); });
+  function nHandle(m, force) {
+    if (!m || (m.event && m.event !== "message") || (!m.message && !m.title)) return;
+    if (m.id) {
+      if (nIds.indexOf(m.id) >= 0) return;
+      nIds.push(m.id); if (nIds.length > 80) nIds.shift(); store("nids", nIds);
+    }
+    if (m.time && m.time > nSince) nSince = m.time;
+    if (remoteTopic && m.topic === remoteTopic) return;
+    var p = m.priority || 3;
+    if (p < nMin && !force) return;
+    var e = { t: (m.time || Math.floor(Date.now() / 1000)) * 1000, title: String(m.title || ""), msg: String(m.message || ""), p: p, tags: m.tags || [], topic: m.topic || "" };
+    if (!force) { nLog.unshift(e); if (nLog.length > 20) nLog.length = 20; store("nlog", nLog); }
+    var fresh = force || Date.now() - e.t < 180000;
+    if (!fresh) return;
+    nUnread++; updateChip();
+    if (p >= 5 && $("alert").hidden) {
+      wakeUntil = Date.now() + 60000; sleepForced = false; renderClock();
+      showAlert(nIcon(e) + " " + (e.title || "Urgent notification"), e.msg, "Dismiss", "close");
+      alertTimer = setTimeout(hideAlert, 10 * 60 * 1000);
+      playChime();
+    } else {
+      if (p >= 4) { wakeUntil = Date.now() + 60000; renderClock(); playChime(); }
+      nToast(e);
+    }
+  }
+  function nClose() { if (nES) { try { nES.close(); } catch (e) {} nES = null; } }
+  function nReset() { nClose(); nSince = 0; nErr = ""; nState = nTopics.length ? "connecting" : "off"; if (nTopics.length) { nConnect(); setTimeout(nPoll, 1500); } }
+  function nConnect() {
+    if (!nTopics.length || !window.EventSource) return;
+    nClose();
+    try {
+      nES = new EventSource("https://ntfy.sh/" + nTopics.join(",") + "/sse");
+      nES.onopen = function () { nState = "on"; nErr = ""; nStateUI(); };
+      nES.onerror = function () { nState = "retry"; nStateUI(); };
+      nES.addEventListener("message", function (ev) { var m; try { m = JSON.parse(ev.data); } catch (x) { return; } nHandle(m); });
+    } catch (e) { nErr = String(e && e.message || e); }
+  }
+  function nPoll() {
+    if (!nTopics.length) return;
+    fetch("https://ntfy.sh/" + nTopics.join(",") + "/json?poll=1&since=" + (nSince ? nSince : "10m")).then(function (r) {
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return r.text();
+    }).then(function (t) {
+      nErr = "";
+      t.split("\n").forEach(function (l) { if (!l) return; var m; try { m = JSON.parse(l); } catch (x) { return; } nHandle(m); });
+      nStateUI();
+    }).catch(function (e) { nErr = String(e && e.message || e); nStateUI(); });
+  }
+  setInterval(function () { if (nTopics.length && (!nES || nES.readyState === 2)) nConnect(); }, 60 * 1000);
+  setInterval(nPoll, 15 * 1000);
+  function nLabel() {
+    var t = nState === "on" ? "Listening" : nState === "retry" ? "Reconnecting…" : nState === "connecting" ? "Connecting…" : "Off";
+    if (nErr) t += " · " + nErr;
+    return t;
+  }
+  function nStateUI() { var e = $("nstate"); if (e) e.textContent = nLabel(); }
+  function nAdd(v) {
+    var t = cleanTopic(String(v || "").trim());
+    if (t.length < 4) { nMsg = "Enter the topic name your Pi publishes to (at least 4 characters)."; renderPanel(); return; }
+    if (t === remoteTopic) { nMsg = "That is the remote-control code. Use your Pi's own topic."; renderPanel(); return; }
+    if (nTopics.indexOf(t) < 0) nTopics.push(t);
+    nMsg = ""; store("ntopics", nTopics); nReset(); renderPanel();
+  }
+  function notifHTML() {
+    var h = '<div class="pm">' + esc(nMsg) + '</div>', i;
+    h += '<div class="note">Shows messages from your ntfy.sh topics as a banner. Only enter a topic that is private to you: anyone who knows a topic name can read it.</div>';
+    for (i = 0; i < nTopics.length; i++) {
+      h += '<div class="srow"><div class="sl"><b>' + esc(nTopics[i]) + '</b>' + (i === 0 ? '<small id="nstate">' + esc(nLabel()) + '</small>' : '') + '</div>' +
+        '<div class="sb"><button class="btn ghost" type="button" data-a="ndel" data-n="' + i + '">Remove</button></div></div>';
+    }
+    h += '<div class="urlrow"><input class="urlbox" id="ntin" type="text" placeholder="ntfy topic name" autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false" aria-label="ntfy topic">' +
+      '<button class="btn pri" type="button" data-a="nadd">Add</button></div>';
+    h += '<div class="note">Show messages with priority:</div><div class="pills">';
+    [[1, "All"], [3, "Normal and up"], [4, "High and up"], [5, "Urgent only"]].forEach(function (o) {
+      h += '<button class="sw' + (nMin === o[0] ? " on" : "") + '" type="button" data-a="nmin" data-v="' + o[0] + '">' + o[1] + "</button>";
+    });
+    h += '</div><div class="note">High (4): the banner stays until tapped, with a chime. Urgent (5): full-screen alert that wakes the black screen. Chimes need the one-time tap after the app opens.</div>';
+    h += '<div class="btns"><button class="btn" type="button" data-a="ntest">Preview banner</button>' + (nLog.length ? '<button class="btn ghost" type="button" data-a="nclear">Clear history</button>' : "") + '</div>';
+    if (nLog.length) {
+      h += '<div class="nlist">';
+      nLog.slice(0, 10).forEach(function (e) {
+        h += '<div class="nitem">' + nIcon(e) + " <b>" + esc(e.title || e.topic || "Notification") + "</b>" + (e.msg ? " – " + esc(e.msg) : "") +
+          "<small>" + hhmm(new Date(e.t)) + (e.topic ? " · " + esc(e.topic) : "") + "</small></div>";
+      });
+      h += "</div>";
+    }
+    return h;
+  }
+
+  // ---------- weekly refresh: a fresh page every 7 days keeps an always-on Safari from slowing down ----------
+  function maybeWeekly(d) {
+    if (!weekly || d.getSeconds() !== 0) return;
+    if (Date.now() - pageStart < 7 * 24 * 3600 * 1000) return;
+    if (!$("alert").hidden || !$("panel").hidden || prayerSoon(d, 15)) return;
+    var i, isha = null, ok;
+    for (i = 0; i < prayerEls.length; i++) if (prayerEls[i].name === "Isha" && prayerEls[i].time) isha = prayerEls[i].time;
+    // evening, after Isha when people are likely awake to give the one tap that re-enables adhan sound
+    ok = isha ? (d - isha > 45 * 60000 && d - isha < 4 * 3600000) : (d.getHours() >= 22);
+    if (!ok) return;
+    store("reloadnote", Date.now());
+    location.reload();
+  }
+  function maintHTML() {
+    return '<div class="srow"><div class="sl"><b>Weekly refresh</b><small>Reloads the app once a week in the evening after Isha. Afterwards the iPad needs one tap to re-enable adhan sound' +
+      (remoteTopic ? ", and your phone gets a reminder" : "") + '.</small></div>' +
+      '<div class="sb"><button class="sw' + (weekly ? " on" : "") + '" type="button" data-a="weekly">' + (weekly ? "On" : "Off") + '</button></div></div>';
+  }
+
   // ---------- ?debug=1 shows screen measurements (for layout problems on a real iPad) ----------
   if (q.debug === "1") {
     var dbg = document.createElement("div");
@@ -1400,6 +1580,12 @@
   // ---------- start-up ----------
   prunePrayerDays();
   setRemote(q.remote || load("remote") || "");
+  if (nTopics.length) { nConnect(); setTimeout(nPoll, 2000); }
+  var rn = load("reloadnote");
+  if (rn) {
+    store("reloadnote", null);
+    if (Date.now() - rn < 5 * 60000) setTimeout(function () { if (remoteTopic) remoteSend("ack: weekly refresh done – tap the iPad once to re-enable adhan sound"); }, 4000);
+  }
   applyTheme();
   var cw = load("weather"); if (cw) renderWeather(cw);
   var cf = load("fx"); if (cf) renderFX(cf);
@@ -1417,6 +1603,7 @@
     applyTheme();
     checkAdhan(d);
     maybeAutoRefresh(d);
+    maybeWeekly(d);
     if (d.getDate() !== lastDay) {          // new day: rebuild rows from cache, then refresh
       lastDay = d.getDate();
       buildPrayer();

@@ -188,3 +188,18 @@ The bundled fonts are free under the SIL Open Font License 1.1: [Fraunces](https
 
 - Weather, exchange rate and prayer data come from third-party services, so check prayer times against your local mosque or authority if accuracy matters.
 - The iPad Air 2 no longer receives security updates. Keep banking and other sensitive logins off it.
+
+## Notifications from ntfy.sh (for example your Raspberry Pi)
+
+Settings → **Notifications** → type the ntfy.sh topic your Pi already publishes to → Add. New messages appear as a banner at the top of the dashboard.
+
+- Priority 1–3: banner for 20 seconds. Priority 4 (high): banner stays until tapped, plus a chime. Priority 5 (urgent): full-screen alert that also wakes the black night screen.
+- "Show messages with priority" sets a minimum, so noisy topics don't light up the screen.
+- The last 20 messages are kept in the same Settings section; a small "✉ n" on the bottom-left pill counts unread ones.
+- Emoji tags such as `warning`, `rotating_light`, `white_check_mark`, `inbox_tray` become the banner icon.
+- Only the ntfy.sh server works (a self-hosted `http://` server is blocked by Safari on an HTTPS page). The topic name acts like a password, so use a long random one. It cannot be the remote-control code.
+- The topic is stored only on the iPad. Chimes need the usual one tap after the app opens.
+
+## Weekly refresh
+
+Settings → Maintenance → **Weekly refresh** (on by default). After 7 days of uptime the app reloads once, in the evening 45 minutes to 4 hours after Isha, never near a prayer or while an alert is showing. Reloading makes iPadOS silence the adhan until the screen is tapped once, so if remote control is on, your phone gets a message "weekly refresh done – tap the iPad once". Turn it off if you would rather never reload by itself.
