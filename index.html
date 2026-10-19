@@ -486,7 +486,7 @@
     nightTo:   parseInt(q.nightTo   || "6", 10)
   };
 
-  var BUILD = "2026-10-19.9";           // bump on every release (used by the update check)
+  var BUILD = "2026-10-19.10";           // bump on every release (used by the update check)
   var RETRY_MS = 5 * 60 * 1000;         // retry failed fetches every 5 minutes
   var ALERTABLE = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"];
   var PRAYER_NAMES = ["Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"];
@@ -1237,6 +1237,7 @@
       '<button class="btn ghost" type="button" data-a="close">Close</button></div>' +
       '<div class="sec">Notifications</div>' + notifHTML() +
       '<div class="sec">Maintenance</div>' + maintHTML() +
+      '<div class="srow"><div class="sl"><b>Screen info</b><small>Shows the screen measurements. Useful if something doesn\'t fit.</small></div><div class="sb"><button class="btn" type="button" data-a="dbg">Show</button></div></div>' +
       '<div class="sec">Remote control</div>' + remoteHTML() +
       '<div class="note">Files you choose are stored only on this iPad. Sound plays through the iPad speaker at its current volume; ' +
       "if you hear nothing, check the volume and the side switch. After the app is reopened, tap the screen once to re-enable sound.</div>";
@@ -1282,6 +1283,8 @@
     } else if (a === "ntest") {
       nHandle({ id: "t" + Date.now(), time: Math.floor(Date.now() / 1000), topic: "preview", title: "Preview", message: "This is how a notification looks.", priority: 3, tags: ["bell"] }, true);
       closePanel();
+    } else if (a === "dbg") {
+      closePanel(); showDebug();
     } else if (a === "weekly") {
       weekly = !weekly; store("weekly", weekly); renderPanel();
     } else if (a === "theme") {
@@ -1908,8 +1911,10 @@
   window.addEventListener("orientationchange", function () { setTimeout(positionMini, 300); });
 
   // ---------- ?debug=1 shows screen measurements (for layout problems on a real iPad) ----------
-  if (q.debug === "1") {
-    var dbg = document.createElement("div");
+  var dbgTimer = null;
+  function showDebug() {
+    if (document.getElementById("dbgbox")) return;
+    var dbg = document.createElement("div"); dbg.id = "dbgbox";
     dbg.style.cssText = "position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:99;background:rgba(0,0,0,.85);color:#9f9;font:16px/1.4 monospace;padding:12px;white-space:pre;-webkit-user-select:text;user-select:text;";
     document.body.appendChild(dbg);
     var dbgUpdate = function () {
@@ -1917,11 +1922,12 @@
       dbg.textContent = "inner " + innerWidth + "x" + innerHeight + "\nouter " + outerWidth + "x" + outerHeight +
         "\nscreen " + screen.width + "x" + screen.height + "\nclient " + document.documentElement.clientWidth + "x" + document.documentElement.clientHeight +
         "\nvisual " + (vv ? Math.round(vv.width) + "x" + Math.round(vv.height) + " @" + Math.round(vv.offsetTop) : "n/a") +
-        "\nstandalone " + navigator.standalone + "  dpr " + devicePixelRatio + "\nsleep rect top " + Math.round(sl.top) + " bottom " + Math.round(sl.bottom) + "\n(tap to close)";
+        "\nstandalone " + navigator.standalone + "  dpr " + devicePixelRatio + "\nbody " + Math.round(document.body.getBoundingClientRect().height) + "  orient " + (innerWidth > innerHeight ? "landscape" : "portrait") + "\nsleep rect top " + Math.round(sl.top) + " bottom " + Math.round(sl.bottom) + "\n(tap to close)";
     };
-    dbg.addEventListener("click", function (e) { e.stopPropagation(); dbg.remove(); });
-    dbgUpdate(); setInterval(dbgUpdate, 2000);
+    dbg.addEventListener("click", function (e) { e.stopPropagation(); dbg.remove(); clearInterval(dbgTimer); });
+    dbgUpdate(); dbgTimer = setInterval(dbgUpdate, 2000);
   }
+  if (q.debug === "1") showDebug();
 
   // ---------- start-up ----------
   prunePrayerDays();
