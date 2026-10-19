@@ -219,3 +219,15 @@ The small book button at the bottom-left opens the player. Pick a surah (search 
 ## Settings icon
 
 When adhan sound is enabled and a sound is chosen, the bottom-left pill becomes a small gear (tap it for settings). The warning text comes back whenever a tap, a sound or an update is needed. A small number on the gear counts unread notifications.
+
+## The strip at the bottom of the screen
+
+On the iPad Air 2 (iPadOS 15) the see-through status bar style (`black-translucent`) made the Home Screen app 20 points shorter at the bottom, leaving a blank strip that the page can't paint (Settings → Screen info showed inner height 748 of 768). The page now asks for the solid `black` status bar instead: the status bar (time, battery) sits in its own black strip at the top and the page fills the rest of the screen. iOS reads this setting when the app is added to the Home Screen, so remove the old icon and use Share → Add to Home Screen again. To go back, change `black` to `black-translucent` in `index.html` and add the app again.
+
+## Islam Sobhi (streamed reciter)
+
+"Islam Sobhi" is the last entry in the Quran reciter list. Unlike the other reciters, which play one small file per verse from everyayah.com, he is **streamed as whole-surah files** from `cdn.mp3quran.net` (needs the internet; nothing is stored on the iPad).
+
+- **Verse highlight / verse in the mini player / next and previous verse** need a small timing file per surah: `timings/islam-sobhi/001.json` ... `114.json`, each a list of start times in seconds (one per verse, plus the bismillah where the surah has one). Until a surah's file exists, the player simply says "streaming", plays the surah and hides the verse text; next/previous skip 15 s.
+- Surahs play one after another. "Stop at end of surah" and the adhan pause work as for the other reciters.
+- If the site changes its file addresses, edit the URL in the `QREC` list near the Quran player code in `index.html`.

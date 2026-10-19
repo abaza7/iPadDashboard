@@ -485,7 +485,7 @@
     nightTo:   parseInt(q.nightTo   || "6", 10)
   };
 
-  var BUILD = "2026-10-19.10";           // bump on every release (used by the update check)
+  var BUILD = "2026-10-19.12";           // bump on every release (used by the update check)
   var RETRY_MS = 5 * 60 * 1000;         // retry failed fetches every 5 minutes
   var ALERTABLE = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"];
   var PRAYER_NAMES = ["Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"];
@@ -1680,19 +1680,32 @@
   };
   var QREC = [["Mishary Alafasy", "Alafasy_128kbps"], ["Abdul Basit (Murattal)", "Abdul_Basit_Murattal_192kbps"], ["Mahmoud Khalil Al-Husary", "Husary_128kbps"],
     ["Mohamed Al-Minshawi (Murattal)", "Minshawy_Murattal_128kbps"], ["Abdurrahman As-Sudais", "Abdurrahmaan_As-Sudais_192kbps"], ["Saud Ash-Shuraim", "Saood_ash-Shuraym_128kbps"],
-    ["Maher Al-Muaiqly", "MaherAlMuaiqly128kbps"], ["Saad Al-Ghamdi", "Ghamadi_40kbps"], ["Ahmed Al-Ajamy", "Ahmed_ibn_Ali_al-Ajamy_128kbps_ketaballah.net"]];
+    ["Maher Al-Muaiqly", "MaherAlMuaiqly128kbps"], ["Saad Al-Ghamdi", "Ghamadi_40kbps"], ["Ahmed Al-Ajamy", "Ahmed_ibn_Ali_al-Ajamy_128kbps_ketaballah.net"],
+    // Streamed whole-surah recitations: [name, base URL, timings folder]. Verse timings live in timings/<folder>/NNN.json
+    ["Islam Sobhi", "https://cdn.mp3quran.net/download/audio/islam-sobhi/r1/", "islam-sobhi"]];
   var QBASE = "https://everyayah.com/data/";
   var qa = new Audio(); qa.preload = "auto"; qa.setAttribute("playsinline", "");
   var qpre = new Audio(); qpre.preload = "auto";
   var qsv = load("quran") || {};
   var Q = { sura: qsv.sura >= 1 && qsv.sura <= 114 ? qsv.sura : 18, a: qsv.a, rec: qsv.rec >= 0 && qsv.rec < QREC.length ? qsv.rec : 0, verses: qsv.verses !== false,
-    active: false, playing: false, needTap: false, err: "", sleepAt: 0, sleepEnd: false, sleepV: "0", resumeAfter: false, retry: 0, loading: false, dataErr: "" };
+    active: false, playing: false, needTap: false, err: "", sleepAt: 0, sleepEnd: false, sleepV: "0", resumeAfter: false, retry: 0, loading: false, dataErr: "",
+    tm: null, tmDone: false, tmKey: "", seekV: null, seekT: null };
   function p3(n) { return ("00" + n).slice(-3); }
   function qHasBis(s) { return s !== 1 && s !== 9; }
   function qFirst(s) { return qHasBis(s) ? 0 : 1; }
   function qCount(s) { return QDATA.s[s - 1][2]; }
   function qText(s, a) { return a === 0 ? QDATA.v[0][0] : QDATA.v[s - 1][a - 1]; }
   function qUrl(s, a) { return QBASE + QREC[Q.rec][1] + "/" + (a === 0 ? "001001" : p3(s) + p3(a)) + ".mp3"; }
+  function qStream() { return QREC[Q.rec].length > 2; }
+  function qSurl(s) { return QREC[Q.rec][1] + p3(s) + ".mp3"; }
+  function qSrcOk(src) {
+    var i;
+    if (!src) return false;
+    if (src.indexOf(QBASE) === 0) return true;
+    for (i = 0; i < QREC.length; i++) if (QREC[i].length > 2 && src.indexOf(QREC[i][1]) === 0) return true;
+    return false;
+  }
+  function qNoVerse() { return qStream() && Q.tmDone && !Q.tm; }   // streamed without a timing file: no verse tracking
   function qPersist() { store("quran", { sura: Q.sura, a: Q.a, rec: Q.rec, verses: Q.verses }); }
   function qLoadData(cb) {
     if (window.QDATA) { cb(); return; }
@@ -1714,8 +1727,53 @@
     try { p = qa.play(); } catch (e) {}
     if (p && p.then) p.then(function () { Q.needTap = false; qUI(); }, function () { Q.playing = false; Q.needTap = true; qUI(); });
   }
+  function qLoadTimings(s) {
+    var key = Q.rec + ":" + s, x;
+    if (Q.tmKey === key) return;
+    Q.tmKey = key; Q.tm = null; Q.tmDone = false;
+    x = new XMLHttpRequest();
+    x.open("GET", "timings/" + QREC[Q.rec][2] + "/" + p3(s) + ".json");
+    x.onreadystatechange = function () {
+      var d = null, n;
+      if (x.readyState !== 4 || Q.tmKey !== key) return;
+      if (x.status === 200) {
+        try { d = JSON.parse(x.responseText); } catch (e) { d = null; }
+        n = qCount(s) - qFirst(s) + 1;
+        if (!(d && d.length === n)) d = null;
+      }
+      Q.tm = d; Q.tmDone = true;
+      qApplySeek(); qUI();
+    };
+    try { x.send(); } catch (e) { Q.tmDone = true; }
+  }
+  function qApplySeek() {
+    var t = null;
+    if (!qStream() || qa.readyState < 1) return;
+    if (Q.seekT != null) t = Q.seekT;
+    else if (Q.seekV != null) {
+      if (!Q.tmDone) return;
+      if (Q.tm) t = Q.tm[Q.seekV - qFirst(Q.sura)];
+      else if (Q.seekV === qFirst(Q.sura)) t = 0;
+    } else return;
+    Q.seekT = null; Q.seekV = null;
+    if (t != null && isFinite(t)) { try { qa.currentTime = t; } catch (e) {} }
+  }
+  function qVerseAt(t) {
+    var i = Q.tm.length - 1;
+    while (i > 0 && Q.tm[i] > t + 0.2) i--;
+    return qFirst(Q.sura) + i;
+  }
+  function qGotoStream(s, a, play) {
+    var url = qSurl(s);
+    qLoadTimings(s);
+    Q.seekV = a; Q.seekT = null;
+    if (qa.src !== url) { qa.src = url; try { qpre.removeAttribute("src"); } catch (e) {} } else qApplySeek();
+    if (play !== false) qResume();
+    qUI();
+  }
   function qGoto(s, a, play) {
     Q.sura = s; Q.a = a; Q.err = ""; Q.retry = 0; Q.active = true; qPersist();
+    if (qStream()) { qGotoStream(s, a, play); return; }
     qa.src = qUrl(s, a);
     var np = qNextPos(); if (np) qpre.src = qUrl(np.s, np.a);
     if (play !== false) qResume();
@@ -1724,7 +1782,7 @@
   function qPlay() {
     qLoadData(function () {
       Q.active = true;
-      if (!qa.src || qa.src.indexOf(QBASE) !== 0) qGoto(Q.sura, Q.a, true); else qResume();
+      if (!qSrcOk(qa.src)) qGoto(Q.sura, Q.a, true); else qResume();
       qUI();
     });
   }
@@ -1733,12 +1791,18 @@
   function qStop() { try { qa.pause(); } catch (e) {} Q.playing = false; Q.active = false; Q.sleepAt = 0; Q.sleepEnd = false; Q.sleepV = "0"; Q.resumeAfter = false; qUI(); }
   function qNextVerse(auto) {
     var np = qNextPos();
+    if (qStream() && !auto && np && np.s === Q.sura) {        // seek inside the surah file
+      if (Q.tm) qGoto(np.s, np.a, Q.playing || Q.needTap); else { try { qa.currentTime = qa.currentTime + 15; } catch (e) {} }
+      return;
+    }
     if (!np) { qPause(); return; }
     if (auto && Q.sleepEnd && np.s !== Q.sura) { Q.sleepEnd = false; Q.sleepV = "0"; qPause(); qGoto(np.s, np.a, false); return; }
     qGoto(np.s, np.a, true);
   }
   function qPrevVerse() {
-    if (qa.currentTime > 3) { try { qa.currentTime = 0; } catch (e) {} return; }
+    if (qStream() && !Q.tm) { try { qa.currentTime = Math.max(0, qa.currentTime - 15); } catch (e) {} return; }
+    if (qStream()) { if (Q.a === qFirst(Q.sura) ? qa.currentTime > 3 : qa.currentTime - Q.tm[Q.a - qFirst(Q.sura)] > 3) { qGoto(Q.sura, Q.a, Q.playing || Q.needTap); return; } }
+    else if (qa.currentTime > 3) { try { qa.currentTime = 0; } catch (e) {} return; }
     var s = Q.sura, a = Q.a - 1;
     if (a < qFirst(s)) { if (s <= 1) a = qFirst(s); else { s--; a = qCount(s); } }
     qGoto(s, a, Q.playing || Q.needTap);
@@ -1758,25 +1822,47 @@
     if (v === "end") Q.sleepEnd = true; else if (+v > 0) Q.sleepAt = Date.now() + (+v) * 60000;
     if (!$("qpanel").hidden) qPanelFill();
   }
-  function qOurs() { return Q.active && window.QDATA && qa.src && qa.src.indexOf(QBASE) === 0; }
+  function qOurs() { return Q.active && window.QDATA && qSrcOk(qa.src); }
   qa.addEventListener("playing", function () { if (!qOurs()) return; Q.playing = true; Q.needTap = false; Q.err = ""; Q.retry = 0; qUI(); });
   qa.addEventListener("pause", function () { if (qOurs() && !qa.ended) { Q.playing = false; qUI(); } });
-  qa.addEventListener("ended", function () { if (qOurs()) qNextVerse(true); });
+  qa.addEventListener("ended", function () {
+    var s;
+    if (!qOurs()) return;
+    if (!qStream()) { qNextVerse(true); return; }
+    s = Q.sura + 1;
+    if (s > 114) { qPause(); return; }
+    if (Q.sleepEnd) { Q.sleepEnd = false; Q.sleepV = "0"; qGoto(s, qFirst(s), false); Q.playing = false; qUI(); return; }
+    qGoto(s, qFirst(s), true);
+  });
+  qa.addEventListener("loadedmetadata", function () { if (qOurs()) qApplySeek(); });
+  qa.addEventListener("timeupdate", function () {
+    var a;
+    if (!qOurs() || !qStream() || Q.seekV != null || Q.seekT != null) return;
+    if (Q.tm) { a = qVerseAt(qa.currentTime); if (a !== Q.a) { Q.a = a; qPersist(); qUI(); return; } }
+    qBars();
+  });
   qa.addEventListener("error", function () {
     if (!qOurs()) return;
     Q.playing = false;
-    if (Q.retry < 3) { Q.retry++; Q.err = "Connection problem – retrying…"; setTimeout(function () { if (Q.active && !Q.playing) { qa.src = qUrl(Q.sura, Q.a); qResume(); } }, 4000); }
+    if (Q.retry < 3) { Q.retry++; Q.err = "Connection problem – retrying…"; setTimeout(function () { if (Q.active && !Q.playing) { if (qStream()) { Q.seekT = qa.currentTime > 1 ? qa.currentTime : null; if (Q.seekT == null) Q.seekV = Q.a; qa.src = qSurl(Q.sura); } else qa.src = qUrl(Q.sura, Q.a); qResume(); } }, 4000); }
     else { Q.err = "Can't reach the audio. Check the internet connection, then tap play."; }
     qUI();
   });
   function qTick() {
     if (Q.sleepAt && Date.now() >= Q.sleepAt) { Q.sleepAt = 0; Q.sleepV = "0"; qPause(); }
   }
+  function qBars() {
+    var w = Math.round(qPos() * 100) + "%", e;
+    if (!Q.active) return;
+    if ((e = $("qmBar"))) e.style.width = w;
+    if ((e = $("qpBar"))) e.style.width = w;
+  }
   function qPos() {
     var f = qFirst(Q.sura), n = qCount(Q.sura);
+    if (qStream() && qa.duration > 0 && isFinite(qa.duration)) return Math.min(1, qa.currentTime / qa.duration);
     return n - f <= 0 ? 1 : (Q.a - f + 1) / (n - f + 1);
   }
-  function qVerseLabel() { return Q.a === 0 ? "Bismillah" : "Verse " + Q.a + " of " + qCount(Q.sura); }
+  function qVerseLabel() { return qNoVerse() ? "Streaming" : Q.a === 0 ? "Bismillah" : "Verse " + Q.a + " of " + qCount(Q.sura); }
   function positionMini() {
     var m = $("qmini"), c = $("corner"), st = $("status"), vw = window.innerWidth, fs = vw * 0.01, cr = c.getBoundingClientRect();
     if (m.hidden) {      // keep the status text from running into the buttons on the left
@@ -1796,11 +1882,11 @@
     updateStatus();
     if (!Q.active || !window.QDATA) { m.hidden = true; document.body.classList.remove("qv"); positionMini(); qPanelLive(); return; }
     m.hidden = false;
-    document.body.classList.toggle("qv", Q.verses);
+    document.body.classList.toggle("qv", Q.verses && !qNoVerse());
     $("qmPlay").innerHTML = Q.playing ? ICON.pause : ICON.play;
     $("qmT").innerHTML = esc(QDATA.s[Q.sura - 1][1]) + ' <span class="qa">· ' + esc(QDATA.s[Q.sura - 1][0]) + "</span>";
-    $("qmS").textContent = Q.err || (Q.needTap ? "Tap ▶ to start the sound" : QREC[Q.rec][0] + " · " + (Q.a === 0 ? "Bismillah" : Q.a + "/" + qCount(Q.sura)));
-    $("qmV").textContent = Q.verses ? qText(Q.sura, Q.a) : "";
+    $("qmS").textContent = Q.err || (Q.needTap ? "Tap ▶ to start the sound" : QREC[Q.rec][0] + " · " + (qNoVerse() ? "streaming" : Q.a === 0 ? "Bismillah" : Q.a + "/" + qCount(Q.sura)));
+    $("qmV").textContent = Q.verses && !qNoVerse() ? qText(Q.sura, Q.a) : "";
     $("qmBar").style.width = Math.round(qPos() * 100) + "%";
     positionMini(); qPanelLive(); qReadFill();
   }
