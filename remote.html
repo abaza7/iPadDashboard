@@ -27,6 +27,9 @@
   .pr { display: flex; gap: 8px; align-items: center; background: var(--card); border-radius: 14px; padding: 8px 8px 8px 14px; margin-bottom: 8px; }
   .pr b { flex: 1; font-weight: 600; }
   .pr button { padding: 10px 16px; }
+  .ipad { border-radius: 12px; padding: 10px 14px; margin-bottom: 6px; font-size: 14px; background: var(--card); color: var(--dim); }
+  .ipad.ok { color: var(--ok); }
+  .ipad.bad { color: var(--accent); }
   #st { margin-top: 18px; min-height: 22px; font-size: 15px; color: var(--ok); }
   #st.err { color: var(--accent); }
   input { width: 100%; font: inherit; font-size: 18px; padding: 14px; border-radius: 12px; border: 1px solid var(--btn); background: var(--card); color: var(--fg); }
@@ -38,6 +41,7 @@
 <body>
 <h1>Dashboard remote</h1>
 <div class="sub" id="where"></div>
+<div class="ipad" id="ipad" hidden></div>
 
 <div class="setup" id="setup" hidden>
   <div class="sub">Enter the code shown on the iPad: open the dashboard, tap the pill in the bottom-left corner, then <b>Remote control → Turn on</b>.</div>
@@ -95,15 +99,59 @@
   function clean(t) { return String(t || "").replace(/[^A-Za-z0-9_-]/g, "").slice(0, 64); }
   function get() { try { return localStorage.getItem("remote_topic") || ""; } catch (e) { return ""; } }
   function put(t) { try { localStorage.setItem("remote_topic", t); } catch (e) {} }
-  var es = null;
+  var es = null, seen = {}, pending = null, pollN = 0;
 
   function status(t, err) { var e = $("st"); e.textContent = t; e.className = err ? "err" : ""; }
+  function ipad(t, cls) { var e = $("ipad"); e.hidden = !t; e.textContent = t || ""; e.className = "ipad " + (cls || ""); }
 
-  function send(cmd) {
-    status("Sending…");
-    fetch("https://ntfy.sh/" + topic, { method: "POST", body: cmd }).then(function (r) {
-      status(r.ok ? "Sent: " + cmd + " (waiting for the iPad…)" : "Couldn't send (" + r.status + ")", !r.ok);
-    }, function () { status("No internet connection", true); });
+  function onAck(m) {
+    if (!m || !m.message || !/^ack: /.test(m.message)) return;
+    if (m.id) { if (seen[m.id]) return; seen[m.id] = 1; }
+    if (m.time && pending && m.time * 1000 < pending.t - 3000) return;      // an old reply
+    var txt = m.message.slice(5);
+    status("iPad: ✓ " + txt);
+    ipad("iPad answered: " + txt, "ok");
+    pending = null;
+  }
+
+  function poll() {
+    if (!topic) return;
+    fetch("https://ntfy.sh/" + topic + "/json?poll=1&since=1m").then(function (r) {
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return r.text();
+    }).then(function (t) {
+      t.split("\n").forEach(function (l) { if (!l) return; try { onAck(JSON.parse(l)); } catch (x) {} });
+    }).catch(function () {});
+  }
+
+  function waitForAck(what) {
+    pending = { t: Date.now(), what: what };
+    pollN = 0;
+    var timer = setInterval(function () {
+      if (!pending) { clearInterval(timer); return; }
+      pollN++;
+      poll();
+      if (pollN >= 5) {
+        clearInterval(timer);
+        if (pending) {
+          pending = null;
+          status("Sent, but the iPad didn't answer.", true);
+          ipad("No answer from the iPad. Check that the dashboard is open and awake, that Settings → Remote control is on with this same code, and that it has internet.", "bad");
+        }
+      }
+    }, 2500);
+  }
+
+  function send(cmd, quiet) {
+    if (!quiet) status("Sending…");
+    return fetch("https://ntfy.sh/" + topic, { method: "POST", body: cmd }).then(function (r) {
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      if (!quiet) status("Sent: " + cmd + " – waiting for the iPad…");
+      waitForAck(cmd);
+    }).catch(function (e) {
+      status("Couldn't send (" + (e && e.message || "no internet") + "). Check this phone's connection.", true);
+      ipad("Can't reach the relay (ntfy.sh) from this phone.", "bad");
+    });
   }
 
   function listen() {
@@ -112,7 +160,7 @@
     es = new EventSource("https://ntfy.sh/" + topic + "/sse");
     es.addEventListener("message", function (ev) {
       var m; try { m = JSON.parse(ev.data); } catch (x) { return; }
-      if (m && m.message && /^ack: /.test(m.message)) status("iPad: ✓ " + m.message.slice(5));
+      onAck(m);
     });
   }
 
@@ -122,7 +170,7 @@
     var has = !!topic;
     $("setup").hidden = has; $("main").hidden = !has;
     $("where").textContent = has ? "Connected to code " + topic.slice(0, 4) + "-…" : "";
-    if (has) listen();
+    if (has) { listen(); ipad("Checking the iPad…"); send("ping", true); }
   }
 
   var names = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"], box = $("alerts");

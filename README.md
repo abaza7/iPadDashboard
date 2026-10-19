@@ -143,6 +143,13 @@ About every six hours (and shortly after start-up) the dashboard checks whether 
 2. Open that address on your phone (type it in, or send it to yourself in Notes or Messages) and use **Share → Add to Home Screen** to keep it as an app.
 3. The phone page has buttons for: stop adhan, test adhan, black screen on/off, theme, night screen mode, each prayer's alert on/off, refresh data, check the iPad, and reload the app. The iPad confirms each command on the phone.
 
+**If it doesn't work:**
+- On the iPad open **Settings → Remote control → Test**. It sends a message to the relay and checks that it comes back. It says whether the iPad can't reach the relay at all, or reached it but received nothing.
+- The phone page checks the iPad automatically when it opens and tells you if the iPad doesn't answer. Use **Check iPad** to repeat that.
+- The code on the phone and in the iPad's settings must be exactly the same. After **New code** you need the new address on the phone.
+- The iPad listens through a live connection and also checks the relay every 12 seconds, so a command can take up to about 12 seconds when the live connection is stalled.
+- Commands older than two minutes are ignored, so a command sent while the iPad was offline won't fire later.
+
 How it works: the phone and the iPad both use a free message relay, [ntfy.sh](https://ntfy.sh). The code is the name of a private topic. Anyone who learns the code can send these commands, so keep it private and use **New code** in the settings if it leaks. The iPad must be awake and online with the dashboard open. The commands cannot delete anything or change the data sources.
 
 ## Offline behavior and retries

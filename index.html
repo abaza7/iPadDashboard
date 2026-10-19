@@ -385,7 +385,7 @@
     nightTo:   parseInt(q.nightTo   || "6", 10)
   };
 
-  var BUILD = "2026-10-19.3";           // bump on every release (used by the update check)
+  var BUILD = "2026-10-19.4";           // bump on every release (used by the update check)
   var RETRY_MS = 5 * 60 * 1000;         // retry failed fetches every 5 minutes
   var ALERTABLE = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"];
   var PRAYER_NAMES = ["Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"];
@@ -1138,6 +1138,8 @@
     } else if (a === "night") {
       nightMode = t.getAttribute("data-v"); store("nightmode", nightMode);
       wakeUntil = 0; renderClock(); renderPanel();
+    } else if (a === "rtest") {
+      remoteTest();
     } else if (a === "rgen") {
       setRemote(newTopic()); renderPanel();
     } else if (a === "roff") {
@@ -1219,7 +1221,8 @@
   setInterval(checkUpdate, 6 * 60 * 60 * 1000);
 
   // ---------- remote control through ntfy.sh (free relay): phone page -> topic -> this iPad ----------
-  var remoteTopic = "", remoteES = null, remoteState = "off", seenMsg = {};
+  var remoteTopic = "", remoteES = null, remoteState = "off", remoteLast = "", remoteErr = "", lastMsgId = "", selfTest = null;
+  var doneIds = load("doneids") || [];
   function newTopic() {
     var a = "abcdefghjkmnpqrstuvwxyz23456789", out = "", i, r;
     try { r = new Uint8Array(16); crypto.getRandomValues(r); } catch (e) { r = []; for (i = 0; i < 16; i++) r.push(Math.floor(Math.random() * 256)); }
@@ -1227,45 +1230,97 @@
     return out;
   }
   function cleanTopic(t) { return String(t || "").replace(/[^A-Za-z0-9_-]/g, "").slice(0, 64); }
-  function remoteSend(text) {
-    if (!remoteTopic) return;
-    try { fetch("https://ntfy.sh/" + remoteTopic, { method: "POST", body: text }).catch(function () {}); } catch (e) {}
+  function remotePost(text) {
+    if (!remoteTopic) return Promise.reject(new Error("off"));
+    return fetch("https://ntfy.sh/" + remoteTopic, { method: "POST", body: text }).then(function (r) {
+      if (!r.ok) throw new Error("HTTP " + r.status);
+    });
   }
+  function remoteSend(text) { remotePost(text).catch(function () {}); }
   function remoteClose() { if (remoteES) { try { remoteES.close(); } catch (e) {} remoteES = null; } }
   function setRemote(t) {
     remoteTopic = cleanTopic(t);
     store("remote", remoteTopic);
-    remoteClose(); seenMsg = {};
+    remoteClose(); lastMsgId = ""; remoteLast = ""; remoteErr = ""; selfTest = null;
     remoteState = remoteTopic ? "connecting" : "off";
-    if (remoteTopic) remoteConnect();
+    if (remoteTopic) { remoteConnect(); setTimeout(remotePoll, 1500); }
+  }
+
+  // one place that handles every message, whether it came through the live stream or the polling fallback
+  function handleRemoteMsg(m) {
+    if (!m || (m.event && m.event !== "message") || !m.message) return;
+    if (m.id) {
+      if (doneIds.indexOf(m.id) >= 0) return;
+      doneIds.push(m.id); if (doneIds.length > 40) doneIds.shift(); store("doneids", doneIds);
+      lastMsgId = m.id;
+    }
+    if (m.time && Math.abs(Date.now() / 1000 - m.time) > 120) return;      // ignore anything old
+    var txt = String(m.message);
+    if (selfTest && txt === "selftest " + selfTest.id) { selfTest.ok = true; return; }
+    if (/^ack/i.test(txt) || /^selftest /.test(txt)) return;
+    remoteLast = hhmm(new Date());
+    runCommand(txt);
+    setRState();
   }
   function remoteConnect() {
     if (!remoteTopic || !window.EventSource) return;
     remoteClose();
     try {
       remoteES = new EventSource("https://ntfy.sh/" + remoteTopic + "/sse");
-      remoteES.onopen = function () { remoteState = "on"; var e = $("rstate"); if (e) e.textContent = remoteLabel(); };
-      remoteES.onerror = function () { remoteState = "retry"; var e = $("rstate"); if (e) e.textContent = remoteLabel(); };
+      remoteES.onopen = function () { remoteState = "on"; remoteErr = ""; setRState(); };
+      remoteES.onerror = function () { remoteState = "retry"; setRState(); };
       remoteES.addEventListener("message", function (ev) {
         var m; try { m = JSON.parse(ev.data); } catch (x) { return; }
-        if (!m || (m.event && m.event !== "message") || !m.message) return;
-        if (m.id) { if (seenMsg[m.id]) return; seenMsg[m.id] = 1; }
-        if (m.time && Math.abs(Date.now() / 1000 - m.time) > 120) return;      // ignore anything replayed late
-        runCommand(String(m.message));
+        handleRemoteMsg(m);
       });
-    } catch (e) {}
+    } catch (e) { remoteErr = String(e && e.message || e); }
+  }
+  // fallback: ask the relay for new messages every 12 s, in case the live stream is silent (iPadOS sometimes stalls it)
+  function remotePoll() {
+    if (!remoteTopic) return;
+    var url = "https://ntfy.sh/" + remoteTopic + "/json?poll=1&since=" + encodeURIComponent(lastMsgId || "2m");
+    fetch(url).then(function (r) {
+      if (!r.ok) { lastMsgId = ""; throw new Error("HTTP " + r.status); }
+      return r.text();
+    }).then(function (t) {
+      remoteErr = "";
+      t.split("\n").forEach(function (l) { if (!l) return; var m; try { m = JSON.parse(l); } catch (x) { return; } handleRemoteMsg(m); });
+      setRState();
+    }).catch(function (e) { remoteErr = String(e && e.message || e); setRState(); });
   }
   setInterval(function () { if (remoteTopic && (!remoteES || remoteES.readyState === 2)) remoteConnect(); }, 60 * 1000);
+  setInterval(remotePoll, 12 * 1000);
 
-  function remoteLabel() { return remoteState === "on" ? "Connected" : (remoteState === "retry" ? "Reconnecting…" : (remoteState === "connecting" ? "Connecting…" : "Off")); }
+  function remoteTest() {
+    var id = Math.random().toString(36).slice(2, 10), box = $("rtest");
+    selfTest = { id: id, ok: false };
+    if (box) box.textContent = "Testing…";
+    remotePost("selftest " + id).then(function () {
+      var n = 0, t = setInterval(function () {
+        n++;
+        if (selfTest && selfTest.ok) { clearInterval(t); if ($("rtest")) $("rtest").textContent = "✓ Works: sent a message and received it back."; }
+        else if (n >= 16) { clearInterval(t); if ($("rtest")) $("rtest").textContent = "Sent, but it never came back. This network may be blocking ntfy.sh, or the stream is stalled. Try again in a minute."; }
+        else if (n === 3 || n === 7 || n === 11) remotePoll();
+      }, 1000);
+    }, function (e) { if ($("rtest")) $("rtest").textContent = "Couldn't reach ntfy.sh (" + (e && e.message || e) + "). Check the iPad's internet connection."; });
+  }
+
+  function remoteLabel() {
+    var t = remoteState === "on" ? "Connected" : (remoteState === "retry" ? "Reconnecting…" : (remoteState === "connecting" ? "Connecting…" : "Off"));
+    if (remoteLast) t += " · last command " + remoteLast;
+    if (remoteErr) t += " · " + remoteErr;
+    return t;
+  }
+  function setRState() { var e = $("rstate"); if (e) e.textContent = remoteLabel(); }
   function remoteURL() { try { return new URL("remote.html", location.href).href + "#" + remoteTopic; } catch (e) { return "remote.html#" + remoteTopic; } }
   function remoteHTML() {
     if (!remoteTopic) {
       return '<div class="srow"><div class="sl"><b>Control from your phone</b><small>Uses the free ntfy.sh relay. Needs internet on both devices.</small></div>' +
         '<div class="sb"><button class="btn pri" type="button" data-a="rgen">Turn on</button></div></div>';
     }
-    return '<div class="srow"><div class="sl"><b>Remote is on</b><small id="rstate">' + remoteLabel() + '</small></div>' +
-      '<div class="sb"><button class="btn" type="button" data-a="rgen">New code</button><button class="btn ghost" type="button" data-a="roff">Turn off</button></div></div>' +
+    return '<div class="srow"><div class="sl"><b>Remote is on</b><small id="rstate">' + esc(remoteLabel()) + '</small></div>' +
+      '<div class="sb"><button class="btn" type="button" data-a="rtest">Test</button><button class="btn" type="button" data-a="rgen">New code</button><button class="btn ghost" type="button" data-a="roff">Turn off</button></div></div>' +
+      '<div class="pm" id="rtest"></div>' +
       '<div class="note">On your phone open:<span class="tp">' + esc(remoteURL()).replace("#", "<wbr>#") + '</span>Anyone with this code can send commands, so keep it private. “New code” replaces it.</div>';
   }
 
