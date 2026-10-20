@@ -212,7 +212,7 @@ The small book button at the bottom-left opens the player. Pick a surah (search 
 - **Reading view:** the current verse large, with the previous and next verse dimmed, plus the controls. Tap the verse in the mini player, or "Open reading view".
 - **Controls:** previous/next verse, previous/next surah, tap the bar to jump to a verse, sleep timer (15/30/60 min or end of the surah).
 - **Adhan:** the Quran pauses by itself when the adhan plays and resumes when the adhan is stopped or finished.
-- **Phone remote:** a Quran section on the remote page (play, pause, stop, previous/next verse, surah number, sleep). Commands: `quran play`, `quran play 18`, `quran pause`, `quran stop`, `quran next`, `quran prev`, `quran surah 36`, `quran sleep 30`.
+- **Phone remote:** a Quran section on the remote page (play, pause, stop, previous/next verse, reciter, surah number, sleep). Commands: `quran play`, `quran play 18`, `quran pause`, `quran stop`, `quran next`, `quran prev`, `quran surah 36`, `quran reciter 10`, `quran sleep 30`. The reciter number is the position in the reciter list (1 = Mishary Alafasy ... 10 = Islam Sobhi); the list in `remote.html` must stay in the same order as `QREC` in `index.html`. Changing the reciter keeps the surah and verse and keeps playing if it was playing.
 - **Needs internet for the audio** (everyayah.com). The text and the Arabic font are bundled (`quran-data.js`, `fonts/AmiriQuran.woff2`). Like the adhan, sound needs one tap after the app opens.
 - Verse text: Tanzil.net via the quran-json package (CC BY-SA 4.0). Font: Amiri Quran (SIL OFL).
 
@@ -228,6 +228,6 @@ On the iPad Air 2 (iPadOS 15) the see-through status bar style (`black-transluce
 
 "Islam Sobhi" is the last entry in the Quran reciter list. Unlike the other reciters, which play one small file per verse from everyayah.com, he is **streamed as whole-surah files** from `cdn.mp3quran.net` (needs the internet; nothing is stored on the iPad).
 
-- **Verse highlight / verse in the mini player / next and previous verse** need a small timing file per surah: `timings/islam-sobhi/001.json` ... `114.json`, each a list of start times in seconds (one per verse, plus the bismillah where the surah has one). Until a surah's file exists, the player simply says "streaming", plays the surah and hides the verse text; next/previous skip 15 s.
+- **Verse highlight / verse in the mini player / next and previous verse** use a small timing file per surah: `timings/islam-sobhi/001.json` ... `114.json`, each a list of start times in seconds (one per verse, plus the bismillah where the surah has one). They were made automatically from the 128 kbps files at `.../islam-sobhi/r1/`, so they only fit those files: if the site replaces a recording, that surah's file needs regenerating. If a surah's file is missing the player just says "streaming", plays the surah and hides the verse text; next/previous skip 15 s.
 - Surahs play one after another. "Stop at end of surah" and the adhan pause work as for the other reciters.
 - If the site changes its file addresses, edit the URL in the `QREC` list near the Quran player code in `index.html`.

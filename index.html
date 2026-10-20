@@ -485,7 +485,7 @@
     nightTo:   parseInt(q.nightTo   || "6", 10)
   };
 
-  var BUILD = "2026-10-19.12";           // bump on every release (used by the update check)
+  var BUILD = "2026-10-20.1";           // bump on every release (used by the update check)
   var RETRY_MS = 5 * 60 * 1000;         // retry failed fetches every 5 minutes
   var ALERTABLE = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"];
   var PRAYER_NAMES = ["Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"];
@@ -1512,6 +1512,12 @@
       else if (qc === "pause") { qPause(); ack = "quran paused"; }
       else if (qc === "stop") { qStop(); ack = "quran stopped"; }
       else if (qc === "next" || qc === "prev") { qLoadData(function () { if (qc === "next") qNextVerse(false); else qPrevVerse(); }); ack = "quran: " + qc + " verse"; }
+      else if (qc === "reciter" && w[2] >= 1 && w[2] <= QREC.length) {
+        var was = Q.playing || Q.needTap;
+        Q.rec = +w[2] - 1; qPersist();
+        if (Q.active && window.QDATA) qGoto(Q.sura, Q.a, was); else qPanelLive();
+        ack = "quran reciter: " + QREC[Q.rec][0];
+      }
       else if (qc === "surah" && w[2] >= 1 && w[2] <= 114) { qStartSura(+w[2]); ack = "quran: surah " + w[2] + needsTapNote(); }
       else if (qc === "sleep" && w[2] !== undefined) { qSleep(w[2] === "end" ? "end" : String(+w[2] || 0)); ack = "quran sleep timer: " + w[2]; }
     } else if (c === "refresh") { jobs.forEach(function (j) { j.run(); }); ack = "refreshing data"; }

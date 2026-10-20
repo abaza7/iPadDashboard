@@ -65,6 +65,8 @@
     <button data-c="quran next">Next verse ›</button>
     <button data-c="quran sleep 30">Sleep 30 min</button>
   </div>
+  <div class="pr" style="margin-top:10px"><b>Reciter</b><select id="qr" style="max-width:62%;padding:10px;font-size:16px"><option value="">Choose…</option><option value="1">Mishary Alafasy</option><option value="2">Abdul Basit (Murattal)</option><option value="3">Mahmoud Khalil Al-Husary</option><option value="4">Mohamed Al-Minshawi (Murattal)</option><option value="5">Abdurrahman As-Sudais</option><option value="6">Saud Ash-Shuraim</option><option value="7">Maher Al-Muaiqly</option><option value="8">Saad Al-Ghamdi</option><option value="9">Ahmed Al-Ajamy</option><option value="10">Islam Sobhi</option></select></div>
+  <!-- keep this list in the same order as QREC in index.html (the iPad is told the number) -->
   <div class="pr" style="margin-top:10px"><b>Surah</b><input id="qn" type="number" inputmode="numeric" min="1" max="114" placeholder="1–114" style="width:90px;padding:10px;font-size:16px"><button id="qgo" type="button">Play</button></div>
 
   <h2>Screen</h2>
@@ -198,6 +200,10 @@
       if (t.getAttribute("data-confirm") && !window.confirm("Reload the dashboard? It will need a tap on the iPad to re-enable sound.")) return;
       send(t.getAttribute("data-c"));
     }
+  });
+  $("qr").addEventListener("change", function () {
+    var n = parseInt($("qr").value, 10);
+    if (n >= 1) send("quran reciter " + n);
   });
   $("qgo").addEventListener("click", function () {
     var n = parseInt($("qn").value, 10);
