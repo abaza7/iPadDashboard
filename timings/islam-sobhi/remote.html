@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Remote">
+<meta name="robots" content="noindex">
+<title>Dashboard Remote</title>
+<style>
+  :root { --bg: #231a17; --fg: #f4e8d4; --dim: #c4af97; --card: #34261f; --accent: #eca673; --btn: #4a372d; --pri: #e3955f; --pri-fg: #241209; --ok: #8fc79a; }
+  @media (prefers-color-scheme: light) {
+    :root { --bg: #f6efe4; --fg: #3b2a20; --dim: #6b5545; --card: #ecdfca; --accent: #9c4a2b; --btn: #dcc9ad; --pri: #9a472a; --pri-fg: #fff3e0; --ok: #2f6b3c; }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--fg); font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; -webkit-text-size-adjust: 100%; }
+  body { padding: 16px 16px calc(24px + env(safe-area-inset-bottom)); max-width: 560px; margin: 0 auto; }
+  h1 { font-size: 22px; margin: 8px 0 4px; font-weight: 600; }
+  .sub { color: var(--dim); font-size: 14px; margin-bottom: 14px; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--dim); margin: 22px 0 8px; font-weight: 600; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .grid.three { grid-template-columns: 1fr 1fr 1fr; }
+  button { font: inherit; color: var(--fg); background: var(--btn); border: 0; border-radius: 14px; padding: 16px 10px; font-size: 16px; -webkit-appearance: none; }
+  button:active { opacity: .7; }
+  button.pri { background: var(--pri); color: var(--pri-fg); font-weight: 600; }
+  .pr { display: flex; gap: 8px; align-items: center; background: var(--card); border-radius: 14px; padding: 8px 8px 8px 14px; margin-bottom: 8px; }
+  .pr b { flex: 1; font-weight: 600; }
+  .pr button { padding: 10px 16px; }
+  .ipad { border-radius: 12px; padding: 10px 14px; margin-bottom: 6px; font-size: 14px; background: var(--card); color: var(--dim); }
+  .ipad.ok { color: var(--ok); }
+  .ipad.bad { color: var(--accent); }
+  #st { margin-top: 18px; min-height: 22px; font-size: 15px; color: var(--ok); }
+  #st.err { color: var(--accent); }
+  input { width: 100%; font: inherit; font-size: 18px; padding: 14px; border-radius: 12px; border: 1px solid var(--btn); background: var(--card); color: var(--fg); }
+  .setup { background: var(--card); border-radius: 14px; padding: 14px; }
+  .note { color: var(--dim); font-size: 13px; margin-top: 22px; line-height: 1.45; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<h1>Dashboard remote</h1>
+<div class="sub" id="where"></div>
+<div class="ipad" id="ipad" hidden></div>
+
+<div class="setup" id="setup" hidden>
+  <div class="sub">Enter the code shown on the iPad: open the dashboard, tap the pill in the bottom-left corner, then <b>Remote control → Turn on</b>.</div>
+  <input id="code" placeholder="xxxx-xxxx-xxxx-xxxx" autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false">
+  <p><button class="pri" id="save" type="button" style="width:100%">Connect</button></p>
+</div>
+
+<div id="main" hidden>
+  <h2>Adhan</h2>
+  <div class="grid">
+    <button class="pri" data-c="stop">■ Stop adhan</button>
+    <button data-c="test">▶ Test adhan</button>
+  </div>
+
+  <h2>Quran</h2>
+  <div class="grid three">
+    <button data-c="quran play">▶ Play</button>
+    <button data-c="quran pause">❚❚ Pause</button>
+    <button data-c="quran stop">■ Stop</button>
+    <button data-c="quran prev">‹ Prev verse</button>
+    <button data-c="quran next">Next verse ›</button>
+    <button data-c="quran sleep 30">Sleep 30 min</button>
+  </div>
+  <div class="pr" style="margin-top:10px"><b>Surah</b><input id="qn" type="number" inputmode="numeric" min="1" max="114" placeholder="1–114" style="width:90px;padding:10px;font-size:16px"><button id="qgo" type="button">Play</button></div>
+
+  <h2>Screen</h2>
+  <div class="grid">
+    <button data-c="sleep">Black screen on</button>
+    <button data-c="wake">Wake screen</button>
+  </div>
+
+  <h2>Theme</h2>
+  <div class="grid">
+    <button data-c="theme boho">Boho (auto)</button>
+    <button data-c="theme boho-light">Boho light</button>
+    <button data-c="theme boho-dark">Dark boho</button>
+    <button data-c="theme midnight">Midnight</button>
+  </div>
+
+  <h2>Night screen</h2>
+  <div class="grid three">
+    <button data-c="night black">Black</button>
+    <button data-c="night dim">Dim</button>
+    <button data-c="night off">Off</button>
+  </div>
+
+  <h2>Adhan alerts</h2>
+  <div id="alerts"></div>
+
+  <h2>Dashboard</h2>
+  <div class="grid">
+    <button data-c="refresh">Refresh data</button>
+    <button data-c="ping">Check iPad</button>
+    <button data-c="reload" data-confirm="1">Reload app</button>
+    <button id="forget" type="button">Change code</button>
+  </div>
+  <div id="st"></div>
+  <div class="note">Commands go through the free ntfy.sh service to the dashboard, which must be open, awake and online. “Reload app” makes iPadOS require one tap on the iPad before adhan sound works again.</div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+  var topic = "";
+  function clean(t) { return String(t || "").replace(/[^A-Za-z0-9_-]/g, "").slice(0, 64); }
+  function get() { try { return localStorage.getItem("remote_topic") || ""; } catch (e) { return ""; } }
+  function put(t) { try { localStorage.setItem("remote_topic", t); } catch (e) {} }
+  var es = null, seen = {}, pending = null, pollN = 0;
+
+  function status(t, err) { var e = $("st"); e.textContent = t; e.className = err ? "err" : ""; }
+  function ipad(t, cls) { var e = $("ipad"); e.hidden = !t; e.textContent = t || ""; e.className = "ipad " + (cls || ""); }
+
+  function onAck(m) {
+    if (!m || !m.message || !/^ack: /.test(m.message)) return;
+    if (m.id) { if (seen[m.id]) return; seen[m.id] = 1; }
+    if (m.time && pending && m.time * 1000 < pending.t - 3000) return;      // an old reply
+    var txt = m.message.slice(5);
+    status("iPad: ✓ " + txt);
+    ipad("iPad answered: " + txt, "ok");
+    pending = null;
+  }
+
+  function poll() {
+    if (!topic) return;
+    fetch("https://ntfy.sh/" + topic + "/json?poll=1&since=1m").then(function (r) {
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return r.text();
+    }).then(function (t) {
+      t.split("\n").forEach(function (l) { if (!l) return; try { onAck(JSON.parse(l)); } catch (x) {} });
+    }).catch(function () {});
+  }
+
+  function waitForAck(what) {
+    pending = { t: Date.now(), what: what };
+    pollN = 0;
+    var timer = setInterval(function () {
+      if (!pending) { clearInterval(timer); return; }
+      pollN++;
+      poll();
+      if (pollN >= 5) {
+        clearInterval(timer);
+        if (pending) {
+          pending = null;
+          status("Sent, but the iPad didn't answer.", true);
+          ipad("No answer from the iPad. Check that the dashboard is open and awake, that Settings → Remote control is on with this same code, and that it has internet.", "bad");
+        }
+      }
+    }, 2500);
+  }
+
+  function send(cmd, quiet) {
+    if (!quiet) status("Sending…");
+    return fetch("https://ntfy.sh/" + topic, { method: "POST", body: cmd }).then(function (r) {
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      if (!quiet) status("Sent: " + cmd + " – waiting for the iPad…");
+      waitForAck(cmd);
+    }).catch(function (e) {
+      status("Couldn't send (" + (e && e.message || "no internet") + "). Check this phone's connection.", true);
+      ipad("Can't reach the relay (ntfy.sh) from this phone.", "bad");
+    });
+  }
+
+  function listen() {
+    if (es) { try { es.close(); } catch (e) {} }
+    if (!window.EventSource) return;
+    es = new EventSource("https://ntfy.sh/" + topic + "/sse");
+    es.addEventListener("message", function (ev) {
+      var m; try { m = JSON.parse(ev.data); } catch (x) { return; }
+      onAck(m);
+    });
+  }
+
+  function show() {
+    topic = clean(location.hash.slice(1)) || clean(get());
+    if (location.hash) { put(topic); try { history.replaceState(null, "", location.pathname); } catch (e) {} }
+    var has = !!topic;
+    $("setup").hidden = has; $("main").hidden = !has;
+    $("where").textContent = has ? "Connected to code " + topic.slice(0, 4) + "-…" : "";
+    if (has) { listen(); ipad("Checking the iPad…"); send("ping", true); }
+  }
+
+  var names = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"], box = $("alerts");
+  names.forEach(function (n) {
+    var d = document.createElement("div"); d.className = "pr";
+    d.innerHTML = "<b>" + n + "</b><button data-c=\"alert " + n.toLowerCase() + " on\">🔔 On</button><button data-c=\"alert " + n.toLowerCase() + " off\">🔕 Off</button>";
+    box.appendChild(d);
+  });
+
+  document.addEventListener("click", function (e) {
+    var t = e.target;
+    while (t && t !== document && !(t.getAttribute && t.getAttribute("data-c"))) t = t.parentNode;
+    if (t && t !== document) {
+      if (t.getAttribute("data-confirm") && !window.confirm("Reload the dashboard? It will need a tap on the iPad to re-enable sound.")) return;
+      send(t.getAttribute("data-c"));
+    }
+  });
+  $("qgo").addEventListener("click", function () {
+    var n = parseInt($("qn").value, 10);
+    if (n >= 1 && n <= 114) send("quran surah " + n); else { status("Enter a surah number from 1 to 114.", true); $("qn").focus(); }
+  });
+  $("save").addEventListener("click", function () {
+    var t = clean($("code").value.trim().toLowerCase());
+    if (t.length < 8) { $("code").focus(); return; }
+    put(t); show();
+  });
+  $("forget").addEventListener("click", function () { put(""); location.hash = ""; show(); });
+  window.addEventListener("hashchange", show);
+  show();
+})();
+</script>
+</body>
+</html>
