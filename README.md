@@ -1,3 +1,10 @@
+## v17.0
+- Updated SomaFM official 128kb MP3 streams with failover servers.
+- Signed live remote status and two-way media synchronization.
+- Now playing, Quran surah/verse progress, unified media actions, health indicators.
+- Existing v16.1 phone pairing remains valid.
+- iPadOS Safari background suspension may delay status.
+
 # iPad Dashboard
 
 A single-page, always-on dashboard for an old iPad (built for an iPad Air 2 on iPadOS 15). It shows a large clock, the date (Gregorian and Hijri), the USD/EGP exchange rate, current weather with a 5-day forecast, and the daily prayer times with a countdown to the next one. It can play the adhan at the prayers you choose.

@@ -57,6 +57,15 @@
   details.app { background: var(--card); border-radius: 14px; padding: 12px 14px; margin-top: 18px; font-size: 14px; color: var(--dim); line-height: 1.5; }
   details.app summary { cursor: pointer; color: var(--fg); font-weight: 600; }
   details.app p { margin: 8px 0 0; }
+  .livepanel { background:var(--card);border-radius:16px;padding:14px;margin:14px 0; }
+  .livehead { display:flex;justify-content:space-between;gap:8px;align-items:center; }
+  .livehead span { color:var(--ok);font-size:12px;text-align:right; }
+  #liveMeta {margin:8px 0;font-size:13px;line-height:1.4;}
+  #nowPlaying {padding:12px;background:var(--bg);border-radius:10px;line-height:1.6;}
+  .progress {height:6px;border-radius:6px;background:var(--btn);overflow:hidden;margin:12px 0 4px;}
+  .progress div {background:var(--pri);height:100%;width:0;}
+  #liveTime {margin:5px 0;}
+  .livepanel .grid button {font-size:14px;padding:12px 5px;}
   [hidden] { display: none !important; }
 </style>
 </head>
@@ -72,6 +81,16 @@
 </div>
 
 <div id="main" hidden>
+  <div id="liveStatus" class="livepanel">
+    <div class="livehead"><b>iPad live status</b><span id="liveBadge">Waiting for iPad…</span></div>
+    <div id="liveMeta" class="sub">Requesting an authenticated snapshot</div>
+    <div id="nowPlaying"><b>Nothing playing</b></div>
+    <div id="liveProgress" class="progress" hidden><div id="liveFill"></div></div>
+    <div id="liveTime" class="sub" hidden></div>
+    <div class="grid three" style="margin-top:10px"><button id="livePrev" type="button">◀ Prev</button><button id="liveToggle" type="button">▶ Play</button><button id="liveStop" type="button">■ Stop</button></div>
+    <div id="liveDiag" class="note" style="margin-top:10px">No heartbeat yet</div>
+    <button id="liveRefresh" type="button" style="padding:10px;margin-top:8px;width:100%">↻ Refresh status</button>
+  </div>
   <h2>Adhan</h2>
   <div class="grid">
     <button class="pri" data-c="stop">■ Stop adhan</button>
@@ -184,6 +203,51 @@
   function status(t, err) { var e = $("st"); e.textContent = t; e.className = err ? "err" : ""; }
   function ipad(t, cls) { var e = $("ipad"); e.hidden = !t; e.textContent = t || ""; e.className = "ipad " + (cls || ""); }
 
+  var liveState = null, liveSeen = 0, liveSequence = -1, liveMessageIds = {}, liveBoot = "", ackAt = 0, commandAt = 0;
+  function updateLive() {
+    var age = liveSeen ? Math.round((Date.now() - liveSeen) / 1000) : -1;
+    $("liveBadge").textContent = age < 0 ? "Waiting…" : age < 55 ? "● Online" : age < 120 ? "● Stale" : "● No recent heartbeat";
+    if (!liveState) return;
+    var st = liveState, q = st.quran || {}, r = st.radio || {};
+    $("liveMeta").textContent = "Theme: " + (st.theme || "—") + " · Screen: " + (st.screen || "—") + " · " + (st.version || "") + " · Audio: " + (st.audioReady ? "ready" : "needs tap");
+    var medium = st.media, playing = st.playing, control = medium === "quran" ? "quran" : "radio";
+    if (medium === "quran") {
+      $("nowPlaying").textContent = (playing ? "▶ " : "❚❚ ") + (q.name || "Quran") + " · " + (q.reciter || "") + " · Verse " + q.verse + "/" + (q.verseCount || "?");
+      $("liveProgress").hidden = false; $("liveTime").hidden = false;
+      var pct = q.verseCount ? Math.max(0, Math.min(100, Math.round((q.verse / q.verseCount) * 100))) : 0;
+      $("liveFill").style.width = pct + "%";
+      $("liveTime").textContent = "Surah progress " + pct + "% · Verse audio " + (q.elapsed || 0) + "s" + (q.duration ? " / " + q.duration + "s" : "");
+      if (q.reciterIndex) $("qr").value = String(q.reciterIndex);
+    } else if (medium === "radio") {
+      $("nowPlaying").textContent = (playing ? "● LIVE · " : "Paused · ") + (r.station || "Radio") + (r.error ? " · " + r.error : "");
+      $("liveProgress").hidden = true; $("liveTime").hidden = false; $("liveTime").textContent = "Live stream · " + (r.server || "primary") + " server";
+    } else { $("nowPlaying").textContent = "Nothing playing"; $("liveProgress").hidden = true; $("liveTime").hidden = true; }
+    $("livePrev").disabled = medium !== "quran";
+    $("liveToggle").textContent = playing ? "❚❚ Pause" : "▶ Play";
+    $("liveToggle").disabled = medium === "none";
+    $("liveStop").disabled = medium === "none";
+    $("liveDiag").textContent = "Last status: " + (age < 0 ? "never" : age + "s ago") + " · Last response: " + (ackAt ? Math.round((Date.now()-ackAt)/1000) + "s ago" : "none") + (commandAt && ackAt >= commandAt ? " · Round trip: " + (ackAt-commandAt) + "ms" : "");
+  }
+  function onState(m) {
+    if (!m || !m.message || m.message.indexOf("v17state|") !== 0 || !secret) return;
+    if (m.id && liveMessageIds[m.id]) return;
+    var p = m.message.split("|");
+    if (p.length !== 6 || !/^\d{13}$/.test(p[1]) || !/^[a-f0-9]{32}$/.test(p[2]) || !/^[a-f0-9]{64}$/.test(p[5]) || Math.abs(Date.now()-Number(p[1])) > 120000) return;
+    var message = p.slice(0, 5).join("|");
+    hmac(secret, message).then(function (signature) {
+      if (signature !== p[5] || (m.id && liveMessageIds[m.id])) return;
+      var state; try { state = JSON.parse(decodeURIComponent(p[4])); } catch (e) { return; }
+      if (!state || Math.abs(Date.now()-state.updated) > 120000) return;
+      if (liveState && state.updated < liveState.updated) return;
+      if (m.id) { liveMessageIds[m.id] = true; if (Object.keys(liveMessageIds).length > 100) liveMessageIds = {}; }
+      liveState = state; liveSeen = Date.now(); updateLive();
+    }).catch(function () {});
+  }
+  setInterval(updateLive, 5000);
+  $("liveRefresh").addEventListener("click", function () { send("state"); });
+  $("livePrev").addEventListener("click", function () { if (liveState && liveState.media === "quran") send("quran prev"); });
+  $("liveToggle").addEventListener("click", function () { if (liveState && liveState.media !== "none") send(liveState.media + (liveState.playing ? " pause" : " play")); });
+  $("liveStop").addEventListener("click", function () { if (liveState && liveState.media !== "none") send(liveState.media + " stop"); });
   function onAck(m) {
     if (!m || !m.message || !/^ack: /.test(m.message)) return;
     if (m.id) { if (seen[m.id]) return; seen[m.id] = 1; }
@@ -191,7 +255,7 @@
     var txt = m.message.slice(5);
     status("iPad: ✓ " + txt);
     ipad("iPad answered: " + txt, "ok");
-    pending = null;
+    pending = null; ackAt = Date.now(); updateLive();
   }
 
   function poll() {
@@ -200,7 +264,7 @@
       if (!r.ok) throw new Error("HTTP " + r.status);
       return r.text();
     }).then(function (t) {
-      t.split("\n").forEach(function (l) { if (!l) return; try { onAck(JSON.parse(l)); } catch (x) {} });
+      t.split("\n").forEach(function (l) { if (!l) return; try { var msg = JSON.parse(l); onAck(msg); onState(msg); } catch (x) {} });
     }).catch(function () {});
   }
 
@@ -223,7 +287,7 @@
   }
 
   function send(cmd, quiet) {
-    if (!quiet) status("Sending…");
+    if (!quiet) status("Sending…"); commandAt = Date.now();
     if (!secret || !crypto.subtle) { status("Remote needs a new v16.1 pairing link from iPad Settings.", true); return Promise.resolve(); }
     var payload = "v16.1|" + Date.now() + "|" + randomHex(16) + "|" + cmd;
     return hmac(secret, payload).then(function (sig) {
@@ -244,7 +308,7 @@
     es = new EventSource("https://ntfy.sh/" + topic + "/sse");
     es.addEventListener("message", function (ev) {
       var m; try { m = JSON.parse(ev.data); } catch (x) { return; }
-      onAck(m);
+      onAck(m); onState(m);
     });
   }
 
@@ -262,7 +326,7 @@
     var has = !!topic;
     $("setup").hidden = has; $("main").hidden = !has;
     $("where").textContent = has ? "Connected to code " + topic.slice(0, 4) + "-…" : "";
-    if (has) { listen(); ipad("Checking the iPad…"); send("ping", true); }
+    if (has) { listen(); ipad("Checking the iPad…"); send("state", true); }
   }
 
   var names = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"], box = $("alerts");

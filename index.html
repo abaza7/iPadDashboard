@@ -520,7 +520,7 @@
     nightTo:   parseInt(q.nightTo   || "6", 10)
   };
 
-  var BUILD = "2026-10-21.v16.2";           // bump on every release (used by the update check)
+  var BUILD = "2026-10-21.v17.0";           // bump on every release (used by the update check)
   var RETRY_MS = 5 * 60 * 1000;         // retry failed fetches every 5 minutes
   var ALERTABLE = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"];
   var PRAYER_NAMES = ["Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"];
@@ -623,6 +623,7 @@
 
   // ---------- clock ----------
   function renderClock() {
+    if (typeof publishDashboardState === "function" && remoteTopic) publishDashboardState(false);
     var d = new Date();
     var h = d.getHours(), ap = "";
     if (CFG.h12) { ap = h >= 12 ? "PM" : "AM"; h = h % 12 || 12; }
@@ -1014,6 +1015,7 @@
     return now.getHours() >= 18 || now.getHours() < 6;   // no prayer data yet: rough guess
   }
   function applyTheme() {
+    if (typeof publishDashboardState === "function") setTimeout(function () { publishDashboardState(false); }, 0);
     var now = new Date();
     var t = themePref === "boho" ? (skyIsDark(now) ? "boho-dark" : "boho-light") : themePref;
     if (t === curTheme) return;
@@ -1505,6 +1507,35 @@
     });
   }
   function remoteSend(text) { remotePost(text).catch(function () {}); }
+  // v17 status messages are signed separately from commands. No credentials in payload.
+  var stateSequence = 0, lastPublished = "", lastStateSend = 0, lastStateError = "";
+  function dashboardState() {
+    var qname = "", qcount = 0;
+    if (Q.active && window.QDATA && QDATA.s[Q.sura - 1]) { qname = QDATA.s[Q.sura - 1][1]; qcount = QDATA.s[Q.sura - 1][2]; }
+    var medium = Q.active ? "quran" : (R.active ? "radio" : "none");
+    return { version: BUILD, theme: curTheme || themePref, screen: sleepForced ? "black" : (nightMode || "normal"),
+      audioReady: !!unlocked, transport: remoteState, updated: Date.now(), media: medium,
+      playing: medium === "quran" ? !!Q.playing : (medium === "radio" ? !!R.playing : false),
+      buffering: medium === "quran" ? !!Q.loading : (medium === "radio" ? !!(R.want && !R.playing && !R.needTap) : false),
+      quran: { surah: Q.sura, name: qname, reciter: QREC[Q.rec][0], reciterIndex: Q.rec + 1,
+        verse: Q.a, verseCount: qcount, elapsed: isFinite(qa.currentTime) ? Math.round(qa.currentTime) : 0,
+        duration: isFinite(qa.duration) ? Math.round(qa.duration) : 0, sleepAt: Q.sleepAt || 0 },
+      radio: { station: rCur().n, stationIndex: R.st + 1, sleepAt: R.sleepAt || 0, error: R.err || "", server: R.server ? "backup" : "primary" } };
+  }
+  function publishDashboardState(force) {
+    if (!remoteTopic || !remoteSecret || !crypto.subtle) return;
+    var state = dashboardState(), key = JSON.stringify(state);
+    // updated timestamp changes each call; compare semantic fields instead
+    state.updated = 0; var semantic = JSON.stringify(state); state.updated = Date.now();
+    if (!force && semantic === lastPublished && Date.now() - lastStateSend < 25000) return;
+    if (!force && Date.now() - lastStateSend < 4500) return;
+    lastPublished = semantic; lastStateSend = Date.now();
+    var payload = "v17state|" + Date.now() + "|" + randomHex(16) + "|" + (++stateSequence) + "|" + encodeURIComponent(JSON.stringify(state));
+    hmac(remoteSecret, payload).then(function (sig) { return remotePost(payload + "|" + sig); })
+      .then(function () { lastStateError = ""; }, function (e) { lastStateError = String(e && e.message || e); });
+  }
+  setInterval(function () { if (remoteTopic) publishDashboardState(false); }, 5000);
+  setTimeout(function () { publishDashboardState(true); }, 7000);
   function remoteClose() { if (remoteES) { try { remoteES.close(); } catch (e) {} remoteES = null; } }
   function setRemote(t) {
     remoteTopic = cleanTopic(t);
@@ -1528,7 +1559,7 @@
     if (m.time && Math.abs(Date.now() / 1000 - m.time) > 120) return;      // ignore anything old
     var txt = String(m.message);
     if (selfTest && txt === "selftest " + selfTest.id) { selfTest.ok = true; return; }
-    if (/^ack/i.test(txt) || /^selftest /.test(txt)) return;
+    if (/^ack/i.test(txt) || /^selftest /.test(txt) || txt.indexOf("v17state|") === 0) return;
     if (txt.indexOf("v16.1|") !== 0 || !remoteSecret || !crypto.subtle) { remoteErr = "Unsigned command rejected"; setRState(); return; }
     var parts = txt.split("|");
     if (parts.length !== 5 || !/^\d{13}$/.test(parts[1]) || !/^[a-f0-9]{32}$/.test(parts[2]) || !/^[a-f0-9]{64}$/.test(parts[4]) ||
@@ -1538,7 +1569,7 @@
       if (signature !== parts[4] || commandNonces.indexOf(parts[2]) >= 0) return;
       commandNonces.push(parts[2]); if (commandNonces.length > 150) commandNonces.shift(); store("command_nonces", commandNonces);
       remoteLast = hhmm(new Date()); remoteErr = "";
-      runCommand(parts[3]); setRState();
+      runCommand(parts[3]); setRState(); setTimeout(function () { publishDashboardState(true); }, 350);
     }).catch(function () { remoteErr = "Signature verification unavailable"; setRState(); });
   }
   function remoteConnect() {
@@ -1546,7 +1577,7 @@
     remoteClose();
     try {
       remoteES = new EventSource("https://ntfy.sh/" + remoteTopic + "/sse");
-      remoteES.onopen = function () { remoteState = "on"; remoteErr = ""; setRState(); };
+      remoteES.onopen = function () { remoteState = "on"; remoteErr = ""; setRState(); publishDashboardState(true); };
       remoteES.onerror = function () { remoteState = "retry"; setRState(); };
       remoteES.addEventListener("message", function (ev) {
         var m; try { m = JSON.parse(ev.data); } catch (x) { return; }
@@ -1673,8 +1704,10 @@
       }
     } else if (c === "refresh") { jobs.forEach(function (j) { j.run(); }); ack = "refreshing data"; }
     else if (c === "reload") { remoteSend("ack: reloading (tap the iPad once afterwards)"); setTimeout(function () { location.reload(); }, 800); return; }
+    else if (c === "state") { ack = "state requested"; }
     else if (c === "ping") { ack = "online " + hhmm(new Date()) + " · sound " + (unlocked ? "ready" : "needs a tap") + " · " + BUILD; }
     if (ack) remoteSend("ack: " + ack);
+    if (c === "state") publishDashboardState(true);
   }
 
   // ---------- notifications from ntfy.sh topics (for example the Pi's alerts), shown as banners ----------
@@ -2041,6 +2074,7 @@
     rm.style.left = left + "px"; rm.style.right = right + "px";
   }
   function qUI() {
+    if (typeof publishDashboardState === "function") publishDashboardState(false);
     var b = $("qbtn"), m = $("qmini");
     b.innerHTML = ICON.book; b.className = "qbtn" + (Q.active ? " on" : "");
     document.body.classList.toggle("qon", !!(Q.active || (R && R.active)));
@@ -2166,10 +2200,10 @@
   // ---------- Lofi radio: live internet streams (HTTPS only), plus your own stations ----------
   var RST = [
     { n: "Chillhop · Flux FM", s: "Chillhop", d: "Lofi hip-hop beats", u: "https://streams.fluxfm.de/Chillhop/mp3-128/streams.fluxfm.de/" },
-    { n: "Groove Salad · SomaFM", s: "Groove Salad", d: "Downtempo chill", u: "https://ice1.somafm.com/groovesalad-128-mp3" },
-    { n: "Fluid · SomaFM", s: "Fluid", d: "Instrumental hip-hop", u: "https://ice1.somafm.com/fluid-128-mp3" },
-    { n: "Lush · SomaFM", s: "Lush", d: "Mellow vocals", u: "https://ice1.somafm.com/lush-128-mp3" },
-    { n: "Drone Zone · SomaFM", s: "Drone Zone", d: "Ambient, for sleep", u: "https://ice1.somafm.com/dronezone-128-mp3" },
+    { n: "Groove Salad · SomaFM", s: "Groove Salad", d: "Downtempo chill", u: "https://ice5.somafm.com/groovesalad-128-mp3", alt: "https://ice6.somafm.com/groovesalad-128-mp3" },
+    { n: "Fluid · SomaFM", s: "Fluid", d: "Instrumental hip-hop", u: "https://ice5.somafm.com/fluid-128-mp3", alt: "https://ice2.somafm.com/fluid-128-mp3" },
+    { n: "Lush · SomaFM", s: "Lush", d: "Mellow vocals", u: "https://ice5.somafm.com/lush-128-mp3", alt: "https://ice6.somafm.com/lush-128-mp3" },
+    { n: "Drone Zone · SomaFM", s: "Drone Zone", d: "Ambient, for sleep", u: "https://ice5.somafm.com/dronezone-128-mp3", alt: "https://ice2.somafm.com/dronezone-128-mp3" },
     { n: "Code Radio", s: "Code Radio", d: "Beats to focus", u: "https://coderadio-admin-v2.freecodecamp.org/listen/coderadio/radio.mp3" },
     { n: "Radio Paradise Mellow", s: "Paradise Mellow", d: "Soft mix", u: "https://stream.radioparadise.com/mellow-128" },
     { n: "Chillsynth · Nightride FM", s: "Chillsynth", d: "Chill synthwave", u: "https://stream.nightride.fm/chillsynth.mp3" }
@@ -2178,7 +2212,7 @@
   var rsv = load("radio") || {};
   var ra = new Audio(); ra.preload = "none"; ra.setAttribute("playsinline", "");
   var R = { active: false, playing: false, want: false, needTap: false, err: "", st: rsv.st >= 0 ? rsv.st : 0, sleepAt: 0, sleepV: "0", resumeAfter: false,
-    tries: 0, timer: 0, lastT: -1, lastAt: 0, bad: {}, form: false };
+    tries: 0, server: 0, switching: false, timer: 0, lastT: -1, lastAt: 0, bad: {}, form: false };
   function rList() { return RST.concat(rcust); }
   if (R.st >= rList().length) R.st = 0;
   function rCur() { var l = rList(); return l[R.st] || l[0]; }
@@ -2197,17 +2231,19 @@
     var st = rCur(), p;
     R.lastT = -1; R.lastAt = Date.now();
     try {
-      ra.src = st.u;
+      R.switching = true;
+      ra.src = R.server && st.alt ? st.alt : st.u;
       p = ra.play();
       if (p && p.catch) p.catch(function (e) {
         if (e && e.name === "NotAllowedError") { R.needTap = true; R.playing = false; R.err = "Tap ▶ to start the sound"; rUI(); }
       });
     } catch (e2) { R.err = "Can't play this station"; }
+    setTimeout(function () { R.switching = false; }, 500);
   }
   function rPlay(i) {
     if (Q && Q.active) qStop();
     if (i != null) { R.st = i; rPersist(); }
-    R.active = true; R.want = true; R.needTap = false; R.err = ""; R.tries = 0; R.bad[R.st] = false; R.resumeAfter = false; rClearTimer();
+    R.active = true; R.want = true; R.needTap = false; R.err = ""; R.tries = 0; R.server = 0; R.bad[R.st] = false; R.resumeAfter = false; rClearTimer();
     rStart(); rUI();
   }
   function rPause() { R.want = false; R.resumeAfter = false; rClearTimer(); try { ra.pause(); } catch (e) {} R.playing = false; R.err = ""; R.needTap = false; rUI(); }
@@ -2226,6 +2262,7 @@
     if (!R.active || !R.want || R.needTap) return;
     R.playing = false; rClearTimer();
     R.tries++;
+    if (rCur().alt && R.server === 0) { R.server = 1; R.err = "Trying backup stream…"; R.timer = setTimeout(function () { R.timer = 0; if (R.active && R.want) rStart(); }, 1000); rUI(); return; }
     if (R.tries >= 4) R.bad[R.st] = true;
     R.err = R.tries >= 4 ? "Not responding – still trying every minute" : "Connection lost – reconnecting…";
     R.timer = setTimeout(function () { R.timer = 0; if (R.active && R.want && !R.playing) { rStart(); rUI(); } }, R.tries <= 3 ? 4000 : 60000);
@@ -2236,7 +2273,7 @@
     R.playing = true; R.needTap = false; R.err = ""; R.tries = 0; R.bad[R.st] = false; R.lastAt = Date.now(); rClearTimer(); rUI();
   });
   ra.addEventListener("pause", function () {
-    if (!R.active || !R.want) return;
+    if (!R.active || !R.want || R.switching) return;
     R.playing = false; R.want = false; rUI();      // paused from outside (call, lock-screen control)
   });
   ra.addEventListener("error", function () { if (R.active && R.want) rReconnect(); });
@@ -2258,6 +2295,7 @@
     return eqHTML() + 'Live' + (withDesc ? '<span class="rl"> · ' + esc(st.d) + "</span>" : "");
   }
   function rUI() {
+    if (typeof publishDashboardState === "function") publishDashboardState(false);
     var b = $("rbtn"), m = $("rmini"), st = rCur();
     b.innerHTML = ICON.note; b.className = "qbtn" + (R.active ? " on" : "");
     document.body.classList.toggle("qon", !!(Q.active || R.active));
