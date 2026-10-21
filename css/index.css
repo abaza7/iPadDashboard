@@ -1,0 +1,433 @@
+@font-face { font-family: "Fraunces"; src: url(../fonts/Fraunces.woff2) format("woff2"); font-weight: 300 700; font-style: normal; font-display: swap; }
+  @font-face { font-family: "Fraunces"; src: url(../fonts/Fraunces-Italic.woff2) format("woff2"); font-weight: 300 700; font-style: italic; font-display: swap; }
+  @font-face { font-family: "Jost"; src: url(../fonts/Jost.woff2) format("woff2"); font-weight: 300 600; font-style: normal; font-display: swap; }
+  @font-face { font-family: "AmiriQuran"; src: url(../fonts/AmiriQuran.woff2) format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+  :root {
+    /* Midnight (the original look) */
+    --bg: #0b0f14; --fg: #e8eef5; --dim: #7d8a99; --card: #131a22; --accent: #5cc8ff;
+    --next-bg: #0f2431; --next-border: #5cc8ff; --next-name: #5cc8ff; --next-time: #e8eef5; --next-count: #5cc8ff;
+    --warn: #f2b84b; --warn-fg: #1b1303; --ok: #2fb36b; --ok-fg: #04170d;
+    --pri: #5cc8ff; --pri-fg: #04202e;
+    --panel: #161e28; --btn: #263241; --line: #222d3a; --btn-line: #33414f;
+    --overlay: rgba(0, 0, 0, 0.7); --alert-bg: rgba(5, 12, 18, 0.94);
+    --font-ui: -apple-system, "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+    --font-clock: var(--font-ui); --clock-weight: 200;
+    --past-op: 0.45; --night-op: 0.35;
+    --glow: transparent; --glow2: transparent;
+  }
+  /* Boho: warm cream, terracotta, ochre, sage */
+  html[data-theme="boho-light"] {
+    --bg: #f6efe4; --fg: #3b2a20; --dim: #6b5545; --card: #ecdfca; --accent: #9c4a2b;
+    --next-bg: #9a472a; --next-border: #9a472a; --next-name: #fff3e0; --next-time: #fffaf1; --next-count: #fff3e0;
+    --warn: #e0b04a; --warn-fg: #2b1d05; --ok: #6f8a5f; --ok-fg: #0f1a0b;
+    --pri: #9a472a; --pri-fg: #fff8ee;
+    --panel: #f6efe4; --btn: #e6d6bd; --line: #d9c7aa; --btn-line: #c9b392;
+    --overlay: rgba(59, 42, 32, 0.55); --alert-bg: rgba(246, 239, 228, 0.985);
+    --ring1: #d9a441; --ring2: #c8714f; --glow: rgba(217, 164, 65, 0.22); --glow2: rgba(200, 113, 79, 0.12);
+    --ic1: #a56a0a; --ic2: #4a3426; --ic3: #5f7a50;
+    --clock-weight: 400; --past-op: 0.76; --night-op: 0.7;
+  }
+  /* Dark boho: deep brown, cream text, peach and ochre accents */
+  html[data-theme="boho-dark"] {
+    --bg: #231a17; --fg: #f4e8d4; --dim: #c4af97; --card: #34261f; --accent: #eca673;
+    --next-bg: #e3955f; --next-border: #e3955f; --next-name: #2a1810; --next-time: #241209; --next-count: #2a1810;
+    --warn: #e5b45a; --warn-fg: #241705; --ok: #8fae7e; --ok-fg: #0d170a;
+    --pri: #e3955f; --pri-fg: #241209;
+    --panel: #2c211c; --btn: #41322a; --line: #44342b; --btn-line: #5a463a;
+    --overlay: rgba(0, 0, 0, 0.65); --alert-bg: rgba(25, 17, 14, 0.98);
+    --ring1: #d9a441; --ring2: #c8714f; --glow: rgba(217, 164, 65, 0.10); --glow2: rgba(200, 113, 79, 0.10);
+    --ic1: #e8b85a; --ic2: #f4e8d4; --ic3: #a5c494;
+    --clock-weight: 400; --past-op: 0.7; --night-op: 0.6;
+  }
+  html[data-theme^="boho"] {
+    --font-ui: "Jost", Optima, "Avenir Next", Avenir, "Helvetica Neue", Arial, sans-serif;
+    --font-clock: "Fraunces", Baskerville, "Baskerville Old Face", Palatino, "Palatino Linotype", Georgia, serif;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body {
+    height: 100vh;
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-ui);
+    overflow: hidden;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+  }
+  html[data-theme^="boho"] body {
+    background-image:
+      radial-gradient(circle at 90% 6%, var(--glow), transparent 40%),
+      radial-gradient(circle at 4% 98%, var(--glow2), transparent 36%);
+    background-repeat: no-repeat;
+  }
+  button {
+    font: inherit; color: inherit; border: 0; margin: 0;
+    -webkit-appearance: none; appearance: none; cursor: pointer;
+  }
+  .wrap, .corner, .status, .qmini { transform: translate(var(--dx, 0px), var(--dy, 0px)); }
+  .wrap {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 4vmin 5vmin 8.5vmin;
+    transition: opacity 1s, transform 60s linear;
+  }
+  .corner, .status, .qmini { transition: transform 60s linear; }
+  body.night .wrap { opacity: var(--night-op); }
+  body.night .corner, body.night .status, body.night .qmini { opacity: 0.5; }
+
+  /* ---------- top: clock + weather ---------- */
+  .top {
+    flex: 1 1 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 0;
+  }
+  .clock {
+    font-family: var(--font-clock);
+    font-size: 23.5vmin;
+    font-weight: var(--clock-weight);
+    line-height: 1;
+    letter-spacing: -0.02em;
+    font-variant-numeric: lining-nums tabular-nums;
+    white-space: nowrap;
+  }
+  .clock .sec { font-family: var(--font-ui); font-size: 7vmin; font-weight: 300; color: var(--dim); margin-left: 1.5vmin; letter-spacing: 0; }
+  .clock .ampm { font-family: var(--font-ui); font-size: 6vmin; font-weight: 300; color: var(--dim); margin-left: 1.5vmin; letter-spacing: 0; }
+  .date { margin-top: 2vmin; font-size: 4vmin; line-height: 1.2; color: var(--fg); }
+  .hijri { margin-top: 0.8vmin; font-size: 3vmin; line-height: 1.2; color: var(--dim); }
+  html[data-theme^="boho"] .date { font-family: var(--font-clock); font-style: italic; font-variant-numeric: lining-nums; }
+  .fx {
+    display: inline-block;
+    margin-top: 1.6vmin;
+    padding: 0.8vmin 2.2vmin;
+    border-radius: 2vmin;
+    background: var(--card);
+    font-size: 3.1vmin;
+    line-height: 1.2;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  html[data-theme^="boho"] .fx { border-radius: 6vmin; padding: 0.8vmin 2.6vmin; }
+  .chips .fx { display: block; width: -webkit-fit-content; width: fit-content; }
+  .chips .fx + .fx { margin-top: 1vmin; }
+  .fx .pair { color: var(--dim); margin-right: 1.4vmin; }
+  .fx .karat { color: var(--dim); font-size: 2.5vmin; margin: 0 0.5vmin 0 0; }
+  .fx .sepd { color: var(--dim); margin: 0 0.9vmin; }
+  .fx .chg { color: var(--dim); margin-left: 1.2vmin; font-size: 2.6vmin; }
+
+  .now { text-align: right; max-width: 44vmin; min-width: 0; }
+  .now .icon { font-size: 16vmin; line-height: 1; }
+  .now .temp { font-size: 14vmin; font-weight: 200; line-height: 1; margin-top: 1vmin; }
+  .now .desc { font-size: 3.6vmin; color: var(--fg); margin-top: 1.2vmin; }
+  .now .meta { font-size: 2.8vmin; color: var(--dim); margin-top: 0.8vmin; }
+  /* boho: weather sits in an arch with rainbow-ring outlines */
+  html[data-theme^="boho"] .now {
+    flex: 0 0 auto;
+    width: 41vmin;
+    margin-right: 3.4vmin;
+    padding: 4.6vmin 3vmin 2.2vmin;
+    text-align: center;
+    background: var(--card);
+    border-radius: 999px 999px 3vmin 3vmin;
+    box-shadow: 0 0 0 0.8vmin var(--bg), 0 0 0 1.3vmin var(--ring1), 0 0 0 2.1vmin var(--bg), 0 0 0 2.6vmin var(--ring2);
+  }
+  html[data-theme^="boho"] .now .temp { font-family: var(--font-clock); font-weight: 400; font-size: 9.5vmin; line-height: 0.95; margin-top: 0.4vmin; font-variant-numeric: lining-nums; }
+  html[data-theme^="boho"] .now .desc { font-size: 3.2vmin; margin-top: 1vmin; }
+  html[data-theme^="boho"] .now .meta { font-size: 2.5vmin; margin-top: 0.6vmin; }
+  html[data-theme^="boho"] .top { padding-bottom: 3.4vmin; }
+  html[data-theme^="boho"] .clock { font-size: 22vmin; }
+  html[data-theme^="boho"] .date { margin-top: 1.4vmin; }
+  html[data-theme^="boho"] .now .desc, html[data-theme^="boho"] .now .meta { line-height: 1.25; }
+  html[data-theme^="boho"] .prayers { margin-top: 2.2vmin; }
+  html[data-theme^="boho"] .fx { margin-top: 1.4vmin; }
+  html[data-theme^="boho"] .now .meta span { display: block; }
+  html[data-theme^="boho"] .now .meta .sep { display: none; }
+  .ic { fill: none; stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round; }
+  .ic .c1 { stroke: var(--ic1); }
+  .ic .c2 { stroke: var(--ic2); }
+  .ic .c3 { stroke: var(--ic3); }
+  .ic .cf { fill: var(--card); }
+  .now .icon svg { width: 10.4vmin; height: 10.4vmin; }
+  html[data-theme^="boho"] .now .icon svg { width: 8.6vmin; height: 8.6vmin; }
+  .fc .i svg { width: 5.4vmin; height: 5.4vmin; }
+
+  /* ---------- forecast ---------- */
+  .forecast { display: flex; margin: 0 -1vmin; }
+  .fc {
+    flex: 1 1 0;
+    margin: 0 1vmin;
+    background: var(--card);
+    border-radius: 2.4vmin;
+    padding: 1.8vmin 1vmin;
+    text-align: center;
+  }
+  html[data-theme^="boho"] .fc { border-radius: 3.4vmin; border: 1px solid var(--line); padding: 1vmin 1vmin; }
+  .fc .d { font-size: 2.6vmin; color: var(--dim); }
+  .fc .i { font-size: 6vmin; line-height: 1.3; }
+  .fc .t { font-size: 3vmin; }
+  .fc .t span { color: var(--dim); }
+
+  /* ---------- prayers ---------- */
+  .prayers { display: flex; margin: 3vmin -0.8vmin 0; }
+  .pr {
+    position: relative;
+    flex: 1 1 0;
+    margin: 0 0.8vmin;
+    border-radius: 2.4vmin;
+    padding: 2vmin 1vmin;
+    text-align: center;
+    background: var(--card);
+    border: 0.3vmin solid transparent;
+  }
+  html[data-theme^="boho"] .pr { border-radius: 10vmin 10vmin 2.4vmin 2.4vmin; padding: 4vmin 1vmin 1.5vmin; border: 1px solid var(--line); }
+  .pr .n { font-size: 2.8vmin; color: var(--dim); }
+  .pr .t { font-size: 5vmin; font-weight: 300; margin-top: 0.6vmin; font-variant-numeric: lining-nums tabular-nums; }
+  html[data-theme^="boho"] .pr .t { font-family: var(--font-clock); font-weight: 400; }
+  .pr.next { border-color: var(--next-border); background: var(--next-bg); }
+  .pr.next .n { color: var(--next-name); }
+  .pr.next .t { color: var(--next-time); }
+  .pr.past { opacity: var(--past-op); }
+  .pr .t .ap { font-family: var(--font-ui); font-size: 0.5em; font-weight: 400; margin-left: 0.3em; color: var(--dim); letter-spacing: 0.02em; }
+  .pr.next .t .ap { color: var(--next-time); }
+  .pr .c { font-size: 2.4vmin; color: var(--next-count); min-height: 3vmin; margin-top: 0.4vmin; }
+  .pr .b { position: absolute; top: 0.8vmin; right: 1vmin; font-size: 2.2vmin; line-height: 1; }
+  html[data-theme^="boho"] .pr .b { top: 1.6vmin; right: auto; left: 50%; margin-left: -1.1vmin; }
+  @media (orientation: portrait) { html[data-theme^="boho"] .pr .b { top: 1.2vmin; } }
+
+  /* ---------- corner widgets ---------- */
+  .corner { position: fixed; left: 3vmin; bottom: 2vmin; z-index: 5; display: flex; align-items: center; }
+  .chip {
+    position: relative;
+    padding: 1.1vmin 2.2vmin;
+    border-radius: 3vmin;
+    background: var(--card);
+    color: var(--dim);
+    font-size: 2.4vmin;
+  }
+  .chip.warn { color: var(--warn-fg); background: var(--warn); }
+  .chip.icon, .qbtn { width: 6.6vmin; height: 6.6vmin; padding: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+  .qbtn { margin-left: 1.4vmin; background: var(--card); color: var(--dim); flex: 0 0 auto; }
+  .chip.icon svg, .qbtn svg { width: 56%; height: 56%; display: block; pointer-events: none; }
+  .chip .bd { position: absolute; top: -.6vmin; right: -.6vmin; min-width: 3vmin; height: 3vmin; padding: 0 .7vmin; box-sizing: border-box; border-radius: 1.5vmin; background: var(--accent); color: var(--bg); font-size: 1.9vmin; line-height: 3vmin; text-align: center; }
+  .qbtn.on { color: var(--accent); }
+  .status {
+    position: fixed; right: 3vmin; bottom: 2.6vmin; z-index: 5;
+    font-size: 2vmin; color: var(--dim);
+  }
+
+  /* ---------- settings panel ---------- */
+  .panel {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 20;
+    background: var(--overlay);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .card {
+    width: 88vw; max-width: 110vmin; max-height: 92vh;
+    overflow-y: auto; -webkit-overflow-scrolling: touch;
+    background: var(--panel); border-radius: 3vmin; padding: 3vmin 4vmin 4vmin;
+    font-size: 3vmin;
+  }
+  .ph { display: flex; justify-content: space-between; align-items: center; font-size: 4.2vmin; font-weight: 600; margin-bottom: 2vmin; }
+  .x { background: var(--btn); width: 7vmin; height: 7vmin; border-radius: 50%; padding: 0; display: flex; align-items: center; justify-content: center; flex: 0 0 auto; }
+  .x svg { width: 55%; height: 55%; display: block; pointer-events: none; }
+  .pm { min-height: 3.6vmin; color: var(--accent); font-size: 2.6vmin; margin-bottom: 1vmin; }
+  .sec { margin: 3vmin 0 1vmin; color: var(--dim); font-size: 2.6vmin; text-transform: uppercase; letter-spacing: 0.08em; }
+  .pills { display: flex; flex-wrap: wrap; margin: 0 -0.8vmin; }
+  .sw { margin: 0.8vmin; padding: 1.8vmin 3.2vmin; border-radius: 6vmin; background: var(--btn); color: var(--dim); font-size: 3vmin; }
+  .sw.on { background: var(--ok); color: var(--ok-fg); font-weight: 600; }
+  .srow { display: flex; justify-content: space-between; align-items: center; padding: 1.6vmin 0; border-bottom: 1px solid var(--line); }
+  .srow .sl { flex: 1 1 auto; min-width: 0; }
+  .srow .sl b { display: block; font-weight: 600; }
+  .srow .sl small { display: block; color: var(--dim); font-size: 2.3vmin; }
+  .srow .sl em { display: block; font-style: normal; color: var(--accent); font-size: 2.6vmin; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sb { flex: 0 0 auto; margin-left: 2vmin; }
+  .btn { background: var(--btn); border-radius: 2vmin; padding: 1.6vmin 2.6vmin; font-size: 2.8vmin; margin-left: 1vmin; }
+  .btn.pri { background: var(--pri); color: var(--pri-fg); font-weight: 600; }
+  .btn.ghost { background: transparent; border: 1px solid var(--btn-line); }
+  .filebtn { position: relative; display: inline-block; overflow: hidden; cursor: pointer; }
+  .filebtn .fin { position: absolute; left: 0; top: 0; width: 100%; height: 100%; opacity: 0; font-size: 100px; cursor: pointer; }
+  /* v16.2: align file actions even when one row has a Clear button. */
+  .srow.sound-row .sb { display: flex; align-items: center; justify-content: flex-end; gap: 1vmin; }
+  .srow.sound-row .sb .btn { margin-left: 0; display: inline-flex; align-items: center; justify-content: center; min-height: 6.6vmin; line-height: 1.2; white-space: nowrap; }
+  .srow.sound-row .filebtn { vertical-align: middle; }
+
+  .btns { margin-top: 3vmin; display: flex; flex-wrap: wrap; }
+  .btns .btn { margin: 0 1.4vmin 1.4vmin 0; }
+  .note { margin-top: 2vmin; color: var(--dim); font-size: 2.3vmin; line-height: 1.4; }
+
+  /* ---------- night: black clock screen ---------- */
+  .sleep {
+    position: fixed; top: -12vmin; left: -6vmin; right: -6vmin; bottom: -12vmin; z-index: 8;
+    background: #000; display: flex; align-items: center; justify-content: center;
+    text-align: center; cursor: pointer;
+  }
+  html.sleeping, html.sleeping body { background: #000 !important; background-image: none !important; }
+  .sleep .sl-in { transform: translate(var(--dx, 0px), var(--dy, 0px)); transition: transform 60s linear; }
+  .sleep .sl-clock { font-family: var(--font-clock); font-weight: var(--clock-weight); font-size: 26vmin; line-height: 1; color: #f4e8d4; opacity: 0.3; letter-spacing: -0.02em; font-variant-numeric: lining-nums tabular-nums; white-space: nowrap; }
+  .sleep .sl-clock .ampm { font-family: var(--font-ui); font-size: 6vmin; font-weight: 300; margin-left: 1.5vmin; letter-spacing: 0; }
+  .sleep .sl-next { margin-top: 3vmin; font-size: 3.4vmin; color: #f4e8d4; opacity: 0.26; }
+  .note a, .note code { word-break: break-all; color: var(--accent); font-style: normal; }
+  .urlrow { display: flex; align-items: center; margin: 1.4vmin 0 0.6vmin; }
+  .urlbox { flex: 1 1 auto; min-width: 0; font: inherit; font-size: 2.8vmin; padding: 1.6vmin 2vmin; border-radius: 2vmin; border: 1px solid var(--btn-line); background: var(--bg); color: var(--fg); -webkit-user-select: text; user-select: text; -webkit-appearance: none; appearance: none; }
+  .urlrow .btn { flex: 0 0 auto; margin-left: 1.4vmin; }
+  .note .tp { display: block; font-size: 3.4vmin; color: var(--accent); letter-spacing: 0.04em; margin: 0.6vmin 0; }
+
+  /* ---------- adhan alert ---------- */
+  .alert {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 30;
+    background: var(--alert-bg);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center;
+  }
+  .alert .ai { font-size: 18vmin; line-height: 1; }
+  .alert .an { font-family: var(--font-clock); font-size: 10vmin; font-weight: var(--clock-weight); margin-top: 2vmin; }
+  .alert .as { font-size: 3.6vmin; color: var(--dim); margin-top: 1.5vmin; min-height: 4vmin; }
+  .alert .btn { margin: 5vmin 0 0; padding: 2.4vmin 7vmin; font-size: 4vmin; }
+
+  /* ---------- Quran player ---------- */
+  .qa { font-family: "AmiriQuran", "Amiri", "Geeza Pro", "Noto Naskh Arabic", serif; }
+  .qmini { position: fixed; bottom: 1.6vmin; z-index: 6; background: var(--card); color: var(--fg); border-radius: 3vmin; padding: 1vmin 1.8vmin 1.6vmin; display: flex; align-items: center; overflow: hidden; }
+  .qmini .pb { width: 5.2vmin; height: 5.2vmin; border-radius: 50%; background: var(--pri); color: var(--pri-fg); display: flex; align-items: center; justify-content: center; flex: 0 0 auto; padding: 0; }
+  .qmini .pb svg { width: 52%; height: 52%; display: block; pointer-events: none; }
+  .qmini .tx { flex: 0 1 auto; min-width: 0; margin-left: 1.4vmin; line-height: 1.15; max-width: 37vmin; }
+  .qmini .tx b { display: block; font-size: 2.3vmin; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .qmini .tx small { display: block; font-size: 1.8vmin; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .qmini .mv { flex: 1 1 auto; min-width: 0; direction: rtl; text-align: center; margin: 0 1vmin 0 2vmin; font-size: 3vmin; line-height: 1.45; color: var(--fg);
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .qmini .bar { position: absolute; left: 1.8vmin; right: 1.8vmin; bottom: .7vmin; height: .5vmin; border-radius: 1vmin; background: var(--line); overflow: hidden; }
+  .qmini .bar i { display: block; height: 100%; width: 0; background: var(--accent); }
+  .qmini[hidden] { display: none; }
+  .qstopmini { flex: 0 0 auto; border: 0; background: transparent; color: var(--dim); font-size: 3.5vmin; cursor: pointer; padding: .3vmin 1vmin; }
+  body.qon .status { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 26vmin; }
+  @media (orientation: landscape) {
+    body.qv .wrap { padding-bottom: 13.8vmin !important; }
+    html[data-theme] body.qv .top { padding-bottom: .6vmin; }
+    html[data-theme] body.qv .clock { font-size: 19vmin; }
+    html[data-theme] body.qv .prayers { margin-top: 1.4vmin; }
+    html[data-theme] body.qv .pr { padding-bottom: 1vmin; }
+    html[data-theme^="boho"] body.qv .now { padding: 3vmin 3vmin 1.2vmin; }
+    html[data-theme^="boho"] body.qv .now .temp { font-size: 8vmin; }
+    html[data-theme^="boho"] body.qv .now .icon svg { width: 6.4vmin; height: 6.4vmin; }
+    html[data-theme] body.qv .now .desc, html[data-theme] body.qv .now .meta { margin-top: .3vmin; }
+    html[data-theme="midnight"] body.qv .now .temp { font-size: 10vmin; }
+    html[data-theme="midnight"] body.qv .now .icon svg { width: 7vmin; height: 7vmin; }
+    html[data-theme] body.qv .pr .c { min-height: 2.4vmin; }
+    html[data-theme] body.qv .fc { padding-top: .6vmin; padding-bottom: .6vmin; }
+    html[data-theme] body.qv .fc .i svg { width: 4.6vmin; height: 4.6vmin; }
+  }
+  @media (orientation: portrait) { .qmini .mv { display: none; } .qmini .tx { max-width: none; flex: 1 1 auto; } body.qon .wrap { padding-bottom: 11.2vmin !important; } }
+  .qnow { display: flex; align-items: center; padding: 1.4vmin 0 .6vmin; }
+  .qart { width: 15vmin; height: 15vmin; border-radius: 3vmin; background: var(--pri); color: var(--pri-fg); display: flex; align-items: center; justify-content: center; font-size: 7vmin; flex: 0 0 auto; }
+  .qinfo { margin-left: 3vmin; min-width: 0; }
+  .qinfo .ar { font-size: 6vmin; line-height: 1.3; }
+  .qinfo b { display: block; font-size: 3.4vmin; font-weight: 600; }
+  .qinfo small { display: block; color: var(--dim); font-size: 2.4vmin; }
+  .qprog { margin: 1.6vmin 0 .4vmin; padding: 1vmin 0; cursor: pointer; }
+  .qprog .bar { height: 1vmin; border-radius: 1vmin; background: var(--line); position: relative; }
+  .qprog .bar i { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--accent); border-radius: 1vmin; }
+  .qprog .tm { display: flex; justify-content: space-between; color: var(--dim); font-size: 2.2vmin; margin-top: 1.4vmin; }
+  .qctl { display: flex; justify-content: center; align-items: center; margin: 1vmin 0 1.4vmin; }
+  .qctl .c { width: 9vmin; height: 9vmin; border-radius: 50%; background: var(--btn); margin: 0 1.4vmin; display: flex; align-items: center; justify-content: center; padding: 0; }
+  .qctl .c svg { width: 48%; height: 48%; display: block; pointer-events: none; }
+  .qctl .c.big { width: 12vmin; height: 12vmin; background: var(--pri); color: var(--pri-fg); }
+  .qgrid { display: flex; gap: 2vmin; }
+  .qgrid > div { flex: 1; min-width: 0; }
+  .qlist { border: 1px solid var(--line); border-radius: 2vmin; overflow-y: auto; -webkit-overflow-scrolling: touch; max-height: 38vmin; }
+  .qlist > div { padding: 1.2vmin 2vmin; font-size: 2.5vmin; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+  .qlist > div:last-child { border-bottom: 0; }
+  .qlist > div.on { background: var(--ok); color: var(--ok-fg); font-weight: 600; }
+  .qlist > div[hidden] { display: none; }
+  .qlist .ar { font-size: 3.2vmin; }
+  .qsearch { width: 100%; box-sizing: border-box; font: inherit; font-size: 2.6vmin; padding: 1.2vmin 2vmin; border-radius: 2vmin; border: 1px solid var(--btn-line); background: transparent; color: var(--fg); margin-bottom: 1vmin; }
+  /* v16.2: search occupies a dedicated row in both Quran columns. */
+  .qgrid .qsearch-spacer { height: 0; visibility: hidden; pointer-events: none; }
+  .qgrid .qsearch-spacer.qsearch { height: auto; }
+
+  .qtog { display: flex; justify-content: space-between; align-items: center; padding: 1.2vmin 0; border-top: 1px solid var(--line); margin-top: 1vmin; }
+  .qtog small { display: block; color: var(--dim); font-size: 2.2vmin; }
+  .qread { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 15; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 9vmin 6vmin 21vmin; color: var(--fg); box-sizing: border-box; }
+  .qread .top { position: absolute; top: 2.6vmin; left: 4vmin; right: 4vmin; display: flex; justify-content: space-between; align-items: center; color: var(--dim); font-size: 2.6vmin; }
+  .qread .top b { color: var(--fg); font-size: 3vmin; font-weight: 600; }
+  .qread .cur { direction: rtl; line-height: 1.8; max-width: 92vw; max-height: 100%; overflow: hidden; }
+  .qread .ctx { direction: rtl; color: var(--dim); font-size: 3.4vmin; line-height: 1.6; max-width: 84vw; opacity: .8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin: 1.6vmin 0; }
+  .qread .ref { margin-top: 2vmin; font-size: 2.4vmin; color: var(--dim); letter-spacing: .08em; }
+  .qread .dock { position: absolute; left: 6vmin; right: 6vmin; bottom: 3vmin; }
+  .qread .dock .bar { height: .7vmin; border-radius: 1vmin; background: var(--line); position: relative; overflow: hidden; }
+  .qread .dock .bar i { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--accent); }
+  .qread .dock .qctl { margin: 2vmin 0 0; }
+  .qread .dock .c { width: 8vmin; height: 8vmin; }
+  .qread .dock .c.big { width: 10.5vmin; height: 10.5vmin; }
+  .qread[hidden], .panel[hidden] { display: none; }
+
+  /* ---------- notification banner (ntfy) ---------- */
+  .toast {
+    position: fixed; top: 2.5vmin; left: 50%; width: 86vmin; max-width: 92vw; margin-left: -43vmin; z-index: 12;
+    background: var(--panel); color: var(--fg); border-radius: 2.6vmin; padding: 2vmin 3vmin;
+    box-shadow: 0 1vmin 4vmin rgba(0,0,0,.45); border-left: 1.2vmin solid var(--accent);
+    font-size: 2.8vmin; line-height: 1.3;
+  }
+  .toast.hi { border-left-color: var(--warn); }
+  .toast b { display: block; font-weight: 600; font-size: 3.2vmin; }
+  .toast span { display: block; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
+  .toast small { display: block; color: var(--dim); font-size: 2vmin; margin-top: .6vmin; }
+  .nlist { margin-top: 1vmin; }
+  .nitem { padding: 1.2vmin 0; border-bottom: 1px solid var(--line); font-size: 2.6vmin; }
+  .nitem small { display: block; color: var(--dim); font-size: 2.1vmin; }
+
+  /* ---------- portrait ---------- */
+  @media (orientation: portrait) {
+    .top { flex-direction: column; justify-content: center; }
+    .clock-block { text-align: center; }
+    .clock, html[data-theme^="boho"] .clock { font-size: 18vmin; }
+    .clock .sec { font-size: 6vmin; }
+    .now { max-width: none; text-align: center; margin-top: 2.2vmin; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; }
+    .now .icon { font-size: 9vmin; margin-right: 3vmin; }
+    .now .temp { font-size: 10vmin; margin-top: 0; }
+    .now .desc, .now .meta { flex: 0 0 100%; }
+    html[data-theme^="boho"] .now { width: auto; margin-right: 0; padding: 0; border-radius: 0; box-shadow: none; background: none; border: 0; }
+    html[data-theme^="boho"] .now .temp { font-size: 10vmin; }
+    .now .icon svg { width: 10vmin; height: 10vmin; }
+    html[data-theme^="boho"] .top { padding-bottom: 0; }
+    html[data-theme^="boho"] .prayers { margin-top: 3vmin; }
+    html[data-theme^="boho"] .fx { margin-top: 1.2vmin; }
+    .chips { display: flex; justify-content: center; flex-wrap: wrap; }
+    .chips .fx, .chips .fx + .fx { margin: 1.2vmin 0.6vmin 0; font-size: 2.8vmin; padding: 0.8vmin 1.8vmin; }
+    .fx .karat { font-size: 2.3vmin; }
+    .fx .pair { margin-right: 1vmin; }
+    html[data-theme^="boho"] .now .meta { font-size: 2.3vmin; }
+    html[data-theme^="boho"] .fc { padding: 0.8vmin 1vmin; }
+    html[data-theme^="boho"] .now .ic .cf { fill: var(--bg); }
+    html[data-theme^="boho"] .now .meta span { display: inline; }
+    html[data-theme^="boho"] .now .meta .sep { display: inline; }
+    .prayers { flex-wrap: wrap; }
+    .pr { flex: 0 0 calc(33.33% - 1.6vmin); margin-bottom: 1.6vmin; padding: 1.4vmin 1vmin; }
+    html[data-theme^="boho"] .pr { padding: 3.4vmin 1vmin 1.2vmin; }
+    .pr .t { font-size: 4.6vmin; }
+  }
+
+  /* ---------- Lofi radio ---------- */
+  .qbtn svg.bd { width: 76%; height: 76%; }
+  .eq { display: inline-flex; align-items: flex-end; gap: .35vmin; height: 2.2vmin; margin-right: .9vmin; vertical-align: -.2vmin; }
+  .eq i { display: block; width: .5vmin; background: var(--accent); border-radius: .3vmin; }
+  .eq i:nth-child(1) { height: 55%; } .eq i:nth-child(2) { height: 100%; } .eq i:nth-child(3) { height: 75%; } .eq i:nth-child(4) { height: 40%; }
+  .live { display: inline-block; font-size: 1.7vmin; letter-spacing: .12em; font-weight: 600; padding: .2vmin .8vmin; border-radius: 1vmin; background: var(--accent); color: var(--pri-fg); margin-left: 1vmin; vertical-align: .15vmin; }
+  .rmini { padding-bottom: 1.2vmin; }
+  .rmini .tx { max-width: 60vmin; }
+  .rrow { justify-content: space-between; }
+  .rrow small { color: var(--dim); font-size: 2.1vmin; margin-left: 1.4vmin; font-weight: 400; white-space: nowrap; }
+  .rrow .rx { color: var(--dim); font-size: 2.6vmin; padding: 0 1vmin; margin-left: 1vmin; }
+  .qlist > div.on small { color: inherit; opacity: .85; }
+  .qlist > div.warn { color: var(--dim); }
+  .qlist > div.addrow { border-style: dashed; color: var(--dim); justify-content: center; }
+  .rform { border: 1px solid var(--line); border-radius: 2vmin; padding: 1.6vmin 2vmin; margin-top: 1.2vmin; }
+  .rform .qsearch { margin-bottom: 1vmin; font-size: 2.4vmin; }
+  .rform .btns { margin: .6vmin 0 0; }
+  .rstat { color: var(--accent); font-size: 2.3vmin; margin-top: .8vmin; min-height: 3vmin; }
+  .rart svg { width: 62%; height: 62%; display: block; }
+  @media (orientation: landscape) { body.ron .wrap { padding-bottom: 9vmin !important; } }
+  @media (orientation: portrait) { #rcard .qgrid { display: block; } #rcard .qgrid > div + div { margin-top: 1vmin; } .rmini .rl { display: none; } .rmini .tx { max-width: none; flex: 1 1 auto; } }

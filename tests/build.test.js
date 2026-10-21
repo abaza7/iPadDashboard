@@ -1,0 +1,16 @@
+"use strict";
+const assert=require("node:assert/strict"),fs=require("node:fs"),path=require("node:path"),cp=require("node:child_process");
+const root=path.resolve(__dirname,"..");
+const source=name=>fs.readFileSync(path.join(root,"src/dashboard",name),"utf8");
+const ordered=["shell-before.js","quran.js","radio.js","shell-after.js"];
+const original=fs.readFileSync(path.join(root,"js/dashboard/index.js"),"utf8");
+assert.equal(ordered.map(source).join(""),original,"Generated dashboard does not match sources");
+assert(source("quran.js").includes("function qStop()"));
+assert(source("radio.js").includes("function rStop()"));
+assert(source("quran.js").includes("syncMediaProjection();"));
+assert(source("radio.js").includes("syncMediaProjection();"));
+assert(source("shell-before.js").includes("DashboardState.create"));
+assert(source("shell-after.js").includes("// ---------- start-up"));
+cp.execFileSync(process.execPath,[path.join(root,"tools/build.js")],{stdio:"pipe"});
+assert.equal(fs.readFileSync(path.join(root,"js/dashboard/index.js"),"utf8"),original,"Build not deterministic");
+console.log("PASS: generated media modules and state projection");

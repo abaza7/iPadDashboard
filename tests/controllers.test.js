@@ -1,0 +1,16 @@
+"use strict";
+const assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("node:vm"),path=require("node:path");
+const root=path.resolve(__dirname,"..");const ctx={window:{},Date};vm.createContext(ctx);
+for(const name of ["media-controller","components","diagnostics"])vm.runInContext(fs.readFileSync(path.join(root,"js/core",name+".js"),"utf8"),ctx);
+const m=ctx.window.DashboardMediaController;
+let x=m.transition(null,{type:"PLAY"});assert.equal(x.active,true);assert.equal(x.playing,true);
+x=m.transition(x,{type:"PAUSE"});assert.equal(x.paused,true);
+x=m.transition(x,{type:"POSITION",value:12});assert.equal(x.position,12);
+x=m.transition(x,{type:"ERROR",message:"blocked"});assert.equal(x.playing,false);assert.equal(x.error,"blocked");
+x=m.transition(x,{type:"STOP"});assert.equal(x.active,false);assert.equal(x.position,0);assert.equal(x.error,"");
+assert.equal(m.normalize({active:false,playing:true}).playing,false);
+assert.throws(()=>m.transition(x,{type:"BAD"}));
+const d=ctx.window.DashboardDiagnostics.create(2);d.add("media","blocked");d.add("net","offline");d.add("net","recovered");assert.equal(d.list().length,2);assert.equal(d.list()[0].code,"recovered");d.clear();assert.equal(d.list().length,0);
+const c=ctx.window.DashboardComponents;const node={hidden:false,disabled:false,setAttribute:function(k,v){this[k]=v;}};
+c.text(node,"<hello>");assert.equal(node.textContent,"<hello>");c.visible(node,false);assert.equal(node.hidden,true);c.busy(node,true);assert.equal(node.disabled,true);c.status(node,"Ready","ok");assert.equal(node["data-status"],"ok");
+console.log("PASS: media transitions, bounded diagnostics, reusable UI helpers");

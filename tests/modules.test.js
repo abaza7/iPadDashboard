@@ -1,0 +1,13 @@
+"use strict";
+const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
+const root=path.resolve(__dirname,'..');const context={window:{},Date,Promise,setTimeout,clearTimeout};vm.createContext(context);
+for(const n of ['catalog','ui','state'])vm.runInContext(fs.readFileSync(path.join(root,'js/core',n+'.js'),'utf8'),context);
+const ui=context.window.DashboardUI,cat=context.window.DashboardCatalog,create=context.window.DashboardState.create;
+assert.equal(ui.escapeHTML('<>&"\''),'&lt;&gt;&amp;&quot;&#39;');
+assert.equal(ui.dmy(new Date(2026,0,5)),'05-01-2026');
+assert.equal(ui.friendlyAge(1000,61000),'1m ago');
+assert(cat.reciters.length>=10 && cat.stations.length>=8);
+assert(cat.stations.some(x=>x.s==='Groove Salad' && x.alt));
+const store=create({quran:'paused'});let called=0;const off=store.subscribe(s=>{called++;assert.equal(s.quran,'playing');});store.set({quran:'playing'});off();store.set({quran:'stopped'});assert.equal(called,1);
+for(const asset of ['catalog','ui','network','state'])assert(fs.readFileSync(path.join(root,'index.html'),'utf8').includes('core/'+asset+'.js'));
+console.log('PASS: catalog, UI helpers, shared state, script imports');

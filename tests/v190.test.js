@@ -1,0 +1,17 @@
+"use strict";
+const assert=require("node:assert/strict"),fs=require("node:fs"),path=require("node:path"),vm=require("node:vm");
+const root=path.resolve(__dirname,"..");
+const ctx={window:{localStorage:{v:{remote_topic:"abc"},getItem(k){return this.v[k]||null},setItem(k,v){this.v[k]=v}}}};vm.createContext(ctx);
+for(const f of ["js/core/state.js","js/core/remote-storage.js","js/core/diagnostics.js"])vm.runInContext(fs.readFileSync(path.join(root,f),"utf8"),ctx);
+const store=ctx.window.DashboardState.create({playing:false,verse:1});
+const a=store.get();a.playing=true;assert.equal(store.get().playing,false,"snapshots must be defensive");
+let calls=0,selected=0;
+const off=store.subscribe(()=>calls++);store.subscribe(()=>selected++,s=>s.playing);
+store.set({verse:2});assert.equal(calls,1);assert.equal(selected,0);
+store.set({playing:true});assert.equal(selected,1);off();store.set({playing:false});assert.equal(calls,2);
+store.subscribe(()=>{throw Error("broken consumer")});store.set({verse:3});assert.equal(store.get().verse,3);
+const remote=ctx.window.DashboardRemoteStorage;assert.equal(remote.get("remote_topic"),"abc");assert.equal(remote.put("remote_topic","updated"),true);assert.equal(remote.get("remote_topic"),"updated");
+const diag=ctx.window.DashboardDiagnostics.create(2);diag.add("network","stale");diag.add("audio","blocked");diag.add("remote","offline");assert.equal(diag.count(),2);
+const html=fs.readFileSync(path.join(root,"remote.html"),"utf8"),sw=fs.readFileSync(path.join(root,"sw.js"),"utf8");assert(html.includes("js/core/remote-storage.js"));assert(sw.includes("js/core/remote-storage.js"));assert(sw.includes("ipad-dashboard-v19.0"));
+const before=fs.readFileSync(path.join(root,"src/dashboard/shell-before.js"),"utf8");assert(before.includes("var qm = DashboardMediaController.normalize(Q)"));assert(before.includes("var rm = DashboardMediaController.normalize(R)"));
+console.log("PASS: v19 state isolation, selectors, failures, storage compatibility, diagnostics and assets");

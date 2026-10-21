@@ -1,0 +1,13 @@
+"use strict";
+const assert = require("node:assert/strict"), fs = require("node:fs"), vm = require("node:vm"), path = require("node:path");
+const root = path.resolve(__dirname, ".."); const ctx = {window:{},Date}; vm.createContext(ctx);
+for(const file of ["state.js","diagnostics.js"]) vm.runInContext(fs.readFileSync(path.join(root,"js/core",file),"utf8"),ctx);
+const old = [{time:100,kind:"adhan",detail:"blocked"},{time:90,kind:"network",detail:"timeout"}];
+const log = ctx.window.DashboardDiagnostics.create(2,old);
+assert.equal(log.list().length,2); assert.equal(log.list()[0].category,"adhan");
+log.add("player","recovered");assert.equal(log.list()[0].code,"recovered");assert.equal(log.list().length,2);
+const store = ctx.window.DashboardState.create({status:null});let count=0;const off=store.subscribe(()=>count++);
+store.set({status:{theme:"light",media:"radio"}});assert.equal(store.get().status.media,"radio");off();store.set({status:null});assert.equal(count,1);
+const shell = fs.readFileSync(path.join(root,"src/dashboard/shell-before.js"),"utf8");
+assert(shell.includes("DashboardDiagnostics.create(40"));assert(shell.includes("syncApplicationProjection(state)"));
+console.log("PASS: diagnostics migration and shared application projection");

@@ -1,0 +1,18 @@
+"use strict";
+const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
+const root=path.resolve(__dirname,'..'), context={window:{}};vm.createContext(context);
+vm.runInContext(fs.readFileSync(path.join(root,'js/core/status-projection.js'),'utf8'),context);
+const project=context.window.DashboardStatusProjection.project;
+const idle=project({version:'18.8',quran:{active:false},radio:{active:false}});
+assert.equal(idle.media,'none');assert.equal(idle.playing,false);assert.equal(idle.quran.elapsed,0);
+const playing=project({quran:{active:true,playing:true,verse:22,elapsed:42.8,duration:100},radio:{active:true,playing:true}});
+assert.equal(playing.media,'quran');assert.equal(playing.quran.elapsed,43);assert.equal(playing.playing,true);
+const paused=project({quran:{active:true,playing:false},radio:{active:false}});
+assert.equal(paused.media,'quran');assert.equal(paused.playing,false);
+const stopped=project({quran:{active:false},radio:{active:false}});assert.equal(stopped.media,'none');
+const radio=project({radio:{active:true,want:true,playing:false,needTap:false,server:'backup'}});
+assert.equal(radio.media,'radio');assert.equal(radio.buffering,true);assert.equal(radio.radio.server,'backup');
+assert.equal(project({quran:{active:true,elapsed:Infinity,duration:NaN}}).quran.duration,0);
+assert(fs.readFileSync(path.join(root,'index.html'),'utf8').includes('js/core/status-projection.js'));
+assert(fs.readFileSync(path.join(root,'sw.js'),'utf8').includes('js/core/status-projection.js'));
+console.log('PASS: v18.8 status projection, media priority, paused/stopped, buffering, duration');
