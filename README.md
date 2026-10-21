@@ -258,3 +258,12 @@ The music-note button next to the Quran button opens the radio. It streams live 
 **Deployment:** Copy the contents of the archive to the same static-hosting directory, preserving the `timings/`, `fonts/`, and `icons/` directories. Open Settings > System health after deploying. If offline caching delays the update, reconnect and reload manually at a time when prayer alerts can be re-enabled.
 
 **Remaining v16 work:** remote command authentication/replay protection, configurable settings backup/restore, and real-device Safari/iPadOS 15 validation. Browser autoplay restrictions still require a gesture after a reload; adhan playback cannot be guaranteed while Safari is suspended.
+
+## v16.1 — Security, recovery and Quran playback
+
+- Quran button uses the open-book icon again. The Quran player now has **Stop & close player** and the mini-player has a × Stop control. Stop ends playback, clears the audio source and hides the mini-player; Pause continues to preserve the mini-player.
+- Remote commands are authenticated with HMAC-SHA256 and a randomly generated 256-bit shared secret. The phone includes a timestamp and random nonce; the iPad rejects unsigned, expired, replayed or incorrectly signed commands. Pair again by copying the **new remote link** from iPad Settings → Remote control to your phone. Update both `index.html` and `remote.html` together. The pairing URL contains a secret in its fragment: keep it private. If compromised, tap **New code**.
+- Settings → Settings backup supports JSON export and import for selected preferences (theme, alerts, Quran preference, radio preference, custom stations, weekly maintenance and notification priority). Remote credentials, ntfy topics, media data and cache contents are intentionally excluded. Import reloads the app, so tap the iPad to re-enable sound.
+- The dashboard retains its static hosting and iPadOS 15-compatible browser code. HTTPS is required for Web Crypto on the phone and iPad.
+
+Limitations: relay acknowledgements are not authenticated; an attacker who learns the topic could forge a success message on the phone but cannot make the iPad execute an unsigned command. Browser limitations still prevent guaranteed scheduled audio while suspended, and in-browser file downloads may depend on Safari installation mode.

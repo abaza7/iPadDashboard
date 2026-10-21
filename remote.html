@@ -66,8 +66,8 @@
 <div class="ipad" id="ipad" hidden></div>
 
 <div class="setup" id="setup" hidden>
-  <div class="sub">Enter the code shown on the iPad: open the dashboard, tap the pill in the bottom-left corner, then <b>Remote control → Turn on</b>.</div>
-  <input id="code" placeholder="xxxx-xxxx-xxxx-xxxx" autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false">
+  <div class="sub">Paste the complete v16.1 pairing code (topic.secret) from the iPad: open the dashboard, tap the pill in the bottom-left corner, then <b>Remote control → Turn on</b>.</div>
+  <input id="code" placeholder="topic.secret" autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false">
   <p><button class="pri" id="save" type="button" style="width:100%">Connect</button></p>
 </div>
 
@@ -163,10 +163,21 @@
 (function () {
   "use strict";
   var $ = function (id) { return document.getElementById(id); };
-  var topic = "";
+  var topic = "", secret = "";
   function clean(t) { return String(t || "").replace(/[^A-Za-z0-9_-]/g, "").slice(0, 64); }
   function get() { try { return localStorage.getItem("remote_topic") || ""; } catch (e) { return ""; } }
   function put(t) { try { localStorage.setItem("remote_topic", t); } catch (e) {} }
+
+  // Authenticated v16.1 relay commands. Secrets remain in the URL fragment and local storage.
+  function hexBytes(a) { return Array.prototype.map.call(a, function (n) { return ("0" + n.toString(16)).slice(-2); }).join(""); }
+  function randomHex(n) { var a = new Uint8Array(n); crypto.getRandomValues(a); return hexBytes(a); }
+  function hmac(secret, payload) {
+    var bytes = new Uint8Array(secret.match(/../g).map(function (h) { return parseInt(h, 16); }));
+    return crypto.subtle.importKey("raw", bytes, { name: "HMAC", hash: "SHA-256" }, false, ["sign"])
+      .then(function (key) { return crypto.subtle.sign("HMAC", key, new TextEncoder().encode(payload)); })
+      .then(function (buffer) { return hexBytes(new Uint8Array(buffer)); });
+  }
+
   var es = null, seen = {}, pending = null, pollN = 0;
   var isApp = !!(window.navigator.standalone || (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches));
 
@@ -213,7 +224,11 @@
 
   function send(cmd, quiet) {
     if (!quiet) status("Sending…");
-    return fetch("https://ntfy.sh/" + topic, { method: "POST", body: cmd }).then(function (r) {
+    if (!secret || !crypto.subtle) { status("Remote needs a new v16.1 pairing link from iPad Settings.", true); return Promise.resolve(); }
+    var payload = "v16.1|" + Date.now() + "|" + randomHex(16) + "|" + cmd;
+    return hmac(secret, payload).then(function (sig) {
+      return fetch("https://ntfy.sh/" + topic, { method: "POST", body: payload + "|" + sig });
+    }).then(function (r) {
       if (!r.ok) throw new Error("HTTP " + r.status);
       if (!quiet) status("Sent: " + cmd + " – waiting for the iPad…");
       waitForAck(cmd);
@@ -234,9 +249,12 @@
   }
 
   function show() {
-    topic = clean(location.hash.slice(1)) || clean(get());
+    var pairing = location.hash.slice(1) || get();
+    var match = /^([A-Za-z0-9_-]{1,64})\.([a-f0-9]{64})$/.exec(pairing);
+    topic = match ? match[1] : "";
+    secret = match ? match[2] : "";
     if (location.hash) {
-      put(topic);
+      if (match) put(pairing);
       // In the browser keep the code in the address, so "Add to Home Screen" saves a link that opens already connected.
       if (isApp) { try { history.replaceState(null, "", location.pathname); } catch (e) {} }
     }
@@ -316,7 +334,8 @@
     else { status("Type a surah name or number (1–114), or pick one from the list.", true); $("qn").focus(); }
   });
   $("save").addEventListener("click", function () {
-    var t = clean($("code").value.trim().toLowerCase());
+    var t = $("code").value.trim().toLowerCase();
+    if (!/^[a-z0-9_-]{1,64}\.[a-f0-9]{64}$/.test(t)) { status("Enter the complete v16.1 pairing code from iPad Settings.", true); return; }
     if (t.length < 8) { $("code").focus(); return; }
     put(t); show();
   });

@@ -312,6 +312,7 @@
   .qmini .bar { position: absolute; left: 1.8vmin; right: 1.8vmin; bottom: .7vmin; height: .5vmin; border-radius: 1vmin; background: var(--line); overflow: hidden; }
   .qmini .bar i { display: block; height: 100%; width: 0; background: var(--accent); }
   .qmini[hidden] { display: none; }
+  .qstopmini { flex: 0 0 auto; border: 0; background: transparent; color: var(--dim); font-size: 3.5vmin; cursor: pointer; padding: .3vmin 1vmin; }
   body.qon .status { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 26vmin; }
   @media (orientation: landscape) {
     body.qv .wrap { padding-bottom: 13.8vmin !important; }
@@ -458,9 +459,10 @@
   <div class="prayers" id="prayers"></div>
 </div>
 
+<input type="file" id="settingsFile" accept="application/json,.json" hidden>
 <div class="corner" id="corner"><button class="chip" id="chip" type="button"></button><button class="qbtn" id="qbtn" type="button" aria-label="Quran player"></button><button class="qbtn" id="rbtn" type="button" aria-label="Lofi radio"></button></div>
 <div class="qmini rmini" id="rmini" hidden><button class="pb" id="rmPlay" type="button" aria-label="Play or pause"></button><div class="tx" id="rmOpen"><b id="rmT"></b><small id="rmS"></small></div></div>
-<div class="qmini" id="qmini" hidden><button class="pb" id="qmPlay" type="button" aria-label="Play or pause"></button><div class="tx" id="qmOpen"><b id="qmT"></b><small id="qmS"></small></div><div class="mv qa" id="qmV"></div><div class="bar"><i id="qmBar"></i></div></div>
+<div class="qmini" id="qmini" hidden><button class="pb" id="qmPlay" type="button" aria-label="Play or pause"></button><div class="tx" id="qmOpen"><b id="qmT"></b><small id="qmS"></small></div><button class="qstopmini" id="qmStop" type="button" aria-label="Stop Quran and close player">&#215;</button><div class="mv qa" id="qmV"></div><div class="bar"><i id="qmBar"></i></div></div>
 <div class="status" id="status"></div>
 <div class="toast" id="toast" hidden></div>
 
@@ -509,7 +511,7 @@
     nightTo:   parseInt(q.nightTo   || "6", 10)
   };
 
-  var BUILD = "2026-10-21.v16.0";           // bump on every release (used by the update check)
+  var BUILD = "2026-10-21.v16.1";           // bump on every release (used by the update check)
   var RETRY_MS = 5 * 60 * 1000;         // retry failed fetches every 5 minutes
   var ALERTABLE = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"];
   var PRAYER_NAMES = ["Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"];
@@ -1288,6 +1290,7 @@
     });
     h += '</div><div class="note">Black screen: only a dim clock and the next prayer show, and the layout drifts slightly to protect the screen. Tap it to see everything for a minute.</div>';
     h += '<div class="sec">System health</div>' + diagnosticsHTML();
+    h += '<div class="sec">Settings backup</div><div class="srow"><div class="sl"><b>Export or restore preferences</b><small>Excludes remote secrets, notification topics, and audio files.</small></div><div class="sb"><button class="btn" type="button" data-a="backup-export">Export</button><button class="btn" type="button" data-a="backup-import">Import</button></div></div>';
     h += '<div class="sec">Sound</div>' +
       soundRow("main", "Adhan", "Plays for every enabled prayer") +
       soundRow("fajr", "Fajr adhan (optional)", "If empty, Fajr uses the main adhan") +
@@ -1302,9 +1305,48 @@
       "if you hear nothing, check the volume and the side switch. After the app is reopened, tap the screen once to re-enable sound.</div>";
     $("card").innerHTML = h;
   }
+
+  // User preferences only: never export secret keys, notification topics, or audio files.
+  var BACKUP_KEYS = ["alerts", "theme", "nightmode", "weekly", "quran", "radio", "rcustom", "nmin"];
+  function exportSettings() {
+    var out = { format: "ipad-dashboard-settings", schema: 1, created: new Date().toISOString(), settings: {} };
+    BACKUP_KEYS.forEach(function (key) { var v = load(key); if (v !== null) out.settings[key] = v; });
+    var blob = new Blob([JSON.stringify(out, null, 2)], { type: "application/json" });
+    var url = URL.createObjectURL(blob); var a = document.createElement("a");
+    a.href = url; a.download = "ipad-dashboard-settings-v16.1.json"; document.body.appendChild(a); a.click();
+    document.body.removeChild(a); setTimeout(function () { URL.revokeObjectURL(url); }, 30000);
+  }
+  function importSettings(file) {
+    if (!file || file.size > 100000) { alert("Invalid or oversized settings file."); return; }
+    var reader = new FileReader();
+    reader.onload = function () {
+      try {
+        var obj = JSON.parse(reader.result);
+        if (obj.format !== "ipad-dashboard-settings" || obj.schema !== 1 || !obj.settings || typeof obj.settings !== "object" || Array.isArray(obj.settings)) throw Error("Unsupported format");
+        var count = 0;
+        BACKUP_KEYS.forEach(function (key) {
+          if (!Object.prototype.hasOwnProperty.call(obj.settings, key)) return;
+          var value = obj.settings[key];
+          if (key === "theme" && THEMES.indexOf(value) < 0) return;
+          if (key === "nightmode" && NIGHT_MODES.indexOf(value) < 0) return;
+          if (key === "weekly" && typeof value !== "boolean") return;
+          if (key === "nmin" && [1,3,4,5].indexOf(value) < 0) return;
+          if (key === "alerts" && (!value || typeof value !== "object" || Array.isArray(value))) return;
+          if (["quran","radio"].indexOf(key) >= 0 && (!value || typeof value !== "object" || Array.isArray(value))) return;
+          if (key === "rcustom" && !Array.isArray(value)) return;
+          store(key, value); count++;
+        });
+        alert("Imported " + count + " preference groups. The dashboard will reload. Tap the screen again to enable audio.");
+        location.reload();
+      } catch (e) { alert("Import failed: " + e.message); }
+    };
+    reader.readAsText(file);
+  }
+
   function openPanel() { nUnread = 0; updateChip(); renderPanel(); $("panel").hidden = false; }
   function closePanel() { $("panel").hidden = true; }
 
+  $("settingsFile").addEventListener("change", function () { importSettings(this.files[0]); this.value = ""; });
   $("chip").addEventListener("click", openPanel);
   $("panel").addEventListener("click", function (e) {
     var t = e.target;
@@ -1312,7 +1354,9 @@
     while (t && t !== $("panel") && !(t.getAttribute && t.getAttribute("data-a"))) t = t.parentNode;
     if (!t || t === $("panel")) return;
     var a = t.getAttribute("data-a"), n = t.getAttribute("data-n"), s = t.getAttribute("data-s");
-    if (a === "close") closePanel();
+    if (a === "backup-export") exportSettings();
+    else if (a === "backup-import") $("settingsFile").click();
+    else if (a === "close") closePanel();
     else if (a === "tog") {
       alerts[n] = !alerts[n]; store("alerts", alerts);
       renderPanel(); renderBells(); updateChip();
@@ -1326,7 +1370,7 @@
     } else if (a === "rtest") {
       remoteTest();
     } else if (a === "rgen") {
-      setRemote(newTopic()); renderPanel();
+      remoteSecret = randomHex(32); setRemote(newTopic()); renderPanel();
     } else if (a === "roff") {
       setRemote(""); renderPanel();
     } else if (a === "apply") {
@@ -1422,7 +1466,20 @@
   setTimeout(checkUpdate, 20 * 1000);
   setInterval(checkUpdate, 6 * 60 * 60 * 1000);
 
+
+  // Authenticated v16.1 relay commands. Secrets remain in the URL fragment and local storage.
+  function hexBytes(a) { return Array.prototype.map.call(a, function (n) { return ("0" + n.toString(16)).slice(-2); }).join(""); }
+  function randomHex(n) { var a = new Uint8Array(n); crypto.getRandomValues(a); return hexBytes(a); }
+  function hmac(secret, payload) {
+    var bytes = new Uint8Array(secret.match(/../g).map(function (h) { return parseInt(h, 16); }));
+    return crypto.subtle.importKey("raw", bytes, { name: "HMAC", hash: "SHA-256" }, false, ["sign"])
+      .then(function (key) { return crypto.subtle.sign("HMAC", key, new TextEncoder().encode(payload)); })
+      .then(function (buffer) { return hexBytes(new Uint8Array(buffer)); });
+  }
+
   // ---------- remote control through ntfy.sh (free relay): phone page -> topic -> this iPad ----------
+  var remoteSecret = load("remote_secret") || "";
+  var commandNonces = load("command_nonces") || [];
   var remoteTopic = "", remoteES = null, remoteState = "off", remoteLast = "", remoteErr = "", lastMsgId = "", selfTest = null;
   var doneIds = load("doneids") || [];
   function newTopic() {
@@ -1443,6 +1500,9 @@
   function setRemote(t) {
     remoteTopic = cleanTopic(t);
     store("remote", remoteTopic);
+    if (!remoteTopic) remoteSecret = "";
+    else if (!remoteSecret) remoteSecret = randomHex(32);
+    store("remote_secret", remoteSecret);
     remoteClose(); lastMsgId = ""; remoteLast = ""; remoteErr = ""; selfTest = null;
     remoteState = remoteTopic ? "connecting" : "off";
     if (remoteTopic) { remoteConnect(); setTimeout(remotePoll, 1500); }
@@ -1460,9 +1520,17 @@
     var txt = String(m.message);
     if (selfTest && txt === "selftest " + selfTest.id) { selfTest.ok = true; return; }
     if (/^ack/i.test(txt) || /^selftest /.test(txt)) return;
-    remoteLast = hhmm(new Date());
-    runCommand(txt);
-    setRState();
+    if (txt.indexOf("v16.1|") !== 0 || !remoteSecret || !crypto.subtle) { remoteErr = "Unsigned command rejected"; setRState(); return; }
+    var parts = txt.split("|");
+    if (parts.length !== 5 || !/^\d{13}$/.test(parts[1]) || !/^[a-f0-9]{32}$/.test(parts[2]) || !/^[a-f0-9]{64}$/.test(parts[4]) ||
+        Math.abs(Date.now() - +parts[1]) > 90000 || commandNonces.indexOf(parts[2]) >= 0) return;
+    var message = parts.slice(0, 4).join("|");
+    hmac(remoteSecret, message).then(function (signature) {
+      if (signature !== parts[4] || commandNonces.indexOf(parts[2]) >= 0) return;
+      commandNonces.push(parts[2]); if (commandNonces.length > 150) commandNonces.shift(); store("command_nonces", commandNonces);
+      remoteLast = hhmm(new Date()); remoteErr = "";
+      runCommand(parts[3]); setRState();
+    }).catch(function () { remoteErr = "Signature verification unavailable"; setRState(); });
   }
   function remoteConnect() {
     if (!remoteTopic || !window.EventSource) return;
@@ -1528,7 +1596,7 @@
     return t;
   }
   function setRState() { var e = $("rstate"); if (e) e.textContent = remoteLabel(); }
-  function remoteURL() { try { return new URL("remote.html", location.href).href + "#" + remoteTopic; } catch (e) { return "remote.html#" + remoteTopic; } }
+  function remoteURL() { var code = remoteTopic + "." + remoteSecret; try { return new URL("remote.html", location.href).href + "#" + code; } catch (e) { return "remote.html#" + code; } }
   function remoteHTML() {
     if (!remoteTopic) {
       return '<div class="srow"><div class="sl"><b>Control from your phone</b><small>Uses the free ntfy.sh relay. Needs internet on both devices.</small></div>' +
@@ -1541,7 +1609,7 @@
       '<div class="urlrow"><input class="urlbox" id="rurl" type="text" readonly onfocus="this.select()" onclick="this.select()" value="' + esc(remoteURL()) + '" aria-label="Remote control link">' +
       '<button class="btn pri" type="button" data-a="rcopy">Copy</button>' +
       (navigator.share ? '<button class="btn" type="button" data-a="rshare">Share</button>' : "") + '</div>' +
-      '<div class="note">Anyone with this link can send commands, so keep it private. “New code” replaces it.</div>';
+      '<div class="note">Keep this pairing link private. v16.1 signs commands and rejects unsigned messages. Re-pair the phone after upgrading.</div>';
   }
 
   function needsTapNote() { return unlocked ? "" : " (the iPad needs one tap first)"; }
@@ -1875,7 +1943,7 @@
   }
   function qPause() { try { qa.pause(); } catch (e) {} Q.playing = false; Q.resumeAfter = false; qUI(); }
   function qToggle() { if (Q.playing) qPause(); else qPlay(); }
-  function qStop() { try { qa.pause(); } catch (e) {} Q.playing = false; Q.active = false; Q.sleepAt = 0; Q.sleepEnd = false; Q.sleepV = "0"; Q.resumeAfter = false; qUI(); }
+  function qStop() { try { qa.pause(); qa.removeAttribute("src"); qa.load(); } catch (e) {} Q.playing = false; Q.needTap = false; Q.active = false; Q.sleepAt = 0; Q.sleepEnd = false; Q.sleepV = "0"; Q.resumeAfter = false; $("qread").hidden = true; qUI(); }
   function qNextVerse(auto) {
     var np = qNextPos();
     if (qStream() && !auto && np && np.s === Q.sura) {        // seek inside the surah file
@@ -1965,7 +2033,7 @@
   }
   function qUI() {
     var b = $("qbtn"), m = $("qmini");
-    b.innerHTML = ICON.badge; b.className = "qbtn" + (Q.active ? " on" : "");
+    b.innerHTML = ICON.book; b.className = "qbtn" + (Q.active ? " on" : "");
     document.body.classList.toggle("qon", !!(Q.active || (R && R.active)));
     updateStatus();
     if (!Q.active || !window.QDATA) { m.hidden = true; document.body.classList.remove("qv"); positionMini(); qPanelLive(); return; }
@@ -2009,7 +2077,7 @@
       '<button class="c big" id="qpPlay" type="button" data-a="qtoggle" aria-label="Play or pause"></button>' +
       '<button class="c" type="button" data-a="qnext" aria-label="Next verse">' + ICON.next + '</button><button class="c" type="button" data-a="qskipf" aria-label="Next surah">' + ICON.skipf + "</button></div>" +
       '<div class="qtog"><div><b>Show verses in the mini player</b><small>Landscape only. The reading view always shows them.</small></div><button class="sw' + (Q.verses ? " on" : "") + '" type="button" data-a="qverses">' + (Q.verses ? "On" : "Off") + "</button></div>" +
-      '<div class="btns" style="margin:0 0 1vmin"><button class="btn pri" type="button" data-a="qread">Open reading view</button></div>' +
+      '<div class="btns" style="margin:0 0 1vmin"><button class="btn pri" type="button" data-a="qread">Open reading view</button><button class="btn" type="button" data-a="qstop">■ Stop &amp; close player</button></div>' +
       '<div class="sec" style="margin-top:1vmin">Sleep timer</div><div class="pills">';
     [["0", "Off"], ["15", "15 min"], ["30", "30 min"], ["60", "60 min"], ["end", "End of surah"]].forEach(function (o) { h += '<button class="sw" type="button" data-a="qsleep" data-v="' + o[0] + '">' + o[1] + "</button>"; });
     h += '</div><div class="qgrid"><div><div class="sec">Reciter</div><div class="qlist">';
@@ -2052,7 +2120,8 @@
     while (t && t.getAttribute && !t.getAttribute("data-a")) t = t.parentNode;
     if (!t || !t.getAttribute) return;
     var a = t.getAttribute("data-a"), n = +t.getAttribute("data-n");
-    if (a === "qclose") $("qpanel").hidden = true;
+    if (a === "qstop") { qStop(); $("qpanel").hidden = true; }
+    else if (a === "qclose") $("qpanel").hidden = true;
     else if (a === "qrclose") { $("qread").hidden = true; }
     else if (a === "qtoggle") qToggle();
     else if (a === "qprev") qPrevVerse();
@@ -2077,6 +2146,7 @@
     for (i = 0; i < rows.length; i++) rows[i].hidden = !!v && rows[i].getAttribute("data-k").toLowerCase().indexOf(v) < 0;
   });
   $("qbtn").addEventListener("click", qOpenPanel);
+  $("qmStop").addEventListener("click", function (e) { e.stopPropagation(); qStop(); });
   $("qmPlay").addEventListener("click", function (e) { e.stopPropagation(); qToggle(); });
   $("qmOpen").addEventListener("click", qOpenPanel);
   $("qmV").addEventListener("click", qOpenRead);
