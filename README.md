@@ -233,3 +233,15 @@ On the iPad Air 2 (iPadOS 15) the see-through status bar style (`black-transluce
 - **Verse highlight / verse in the mini player / next and previous verse** use a small timing file per surah: `timings/islam-sobhi/001.json` ... `114.json`, each a list of start times in seconds (one per verse, plus the bismillah where the surah has one). They were made automatically from the 128 kbps files at `.../islam-sobhi/r1/`, so they only fit those files: if the site replaces a recording, that surah's file needs regenerating. If a surah's file is missing the player just says "streaming", plays the surah and hides the verse text; next/previous skip 15 s.
 - Surahs play one after another. "Stop at end of surah" and the adhan pause work as for the other reciters.
 - If the site changes its file addresses, edit the URL in the `QREC` list near the Quran player code in `index.html`.
+
+## Lofi radio
+
+The music-note button next to the Quran button opens the radio. It streams live internet radio (needs internet), shows a small player strip at the bottom, and pauses by itself for the adhan and comes back afterwards, rejoining the live stream. The radio and the Quran never play together: starting one stops the other.
+
+- **Stations:** Chillhop · Flux FM, Groove Salad, Fluid, Lush, Drone Zone (SomaFM), Code Radio, Radio Paradise Mellow, Chillsynth · Nightride FM. The URLs are in `RST` in `index.html`. They have not been tested from the iPad: if one shows ⚠️, replace its link there.
+- **Your own station:** "＋ Add your own station" in the panel (name and an `https://` stream link, saved on the iPad, ✕ deletes it). Plain `http://` links can't play on an https page.
+- **Sleep timer:** 30, 60 or 90 minutes. Volume: use the iPad's volume buttons (iOS ignores app volume).
+- **Connection loss:** retries after a few seconds, then every minute; the strip says "Connection lost – reconnecting…".
+- **Weekly refresh** is skipped while sound is playing.
+- **Phone remote:** a "Lofi radio" section with play/pause/stop, the stations by name, sleep timers and "Add a station". Commands: `radio play`, `radio pause`, `radio stop`, `radio station N`, `radio sleep M`, `radio add <https link> <name>`. The station list in `remote.html` must match `RST` order.
+- The Quran button now uses a "القرآن الكريم" badge icon.

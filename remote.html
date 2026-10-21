@@ -52,6 +52,8 @@
   .ql i { font-style: normal; color: var(--dim); min-width: 2.2em; }
   .ql b { flex: 1; font-weight: 500; }
   .ql span { font-size: 18px; color: var(--dim); }
+  #rl span { font-size: 14px; }
+  #rl div { cursor: pointer; }
   details.app { background: var(--card); border-radius: 14px; padding: 12px 14px; margin-top: 18px; font-size: 14px; color: var(--dim); line-height: 1.5; }
   details.app summary { cursor: pointer; color: var(--fg); font-weight: 600; }
   details.app p { margin: 8px 0 0; }
@@ -89,6 +91,33 @@
   <!-- keep this list in the same order as QREC in index.html (the iPad is told the number) -->
   <div class="pr qs" style="margin-top:10px"><input id="qn" type="search" placeholder="Surah name or number" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="go"><button id="qgo" type="button">Play</button></div>
   <div class="ql" id="ql" hidden></div>
+
+  <h2>Lofi radio</h2>
+  <div class="grid three">
+    <button class="pri" data-c="radio play">▶ Play</button>
+    <button data-c="radio pause">❚❚ Pause</button>
+    <button data-c="radio stop">■ Stop</button>
+  </div>
+  <!-- keep this list in the same order as RST in index.html (the iPad is told the number) -->
+  <div class="ql" id="rl" style="margin:10px 0 8px;max-height:none">
+    <div data-c="radio station 1"><b>Chillhop · Flux FM</b><span>Lofi hip-hop beats</span></div>
+    <div data-c="radio station 2"><b>Groove Salad · SomaFM</b><span>Downtempo chill</span></div>
+    <div data-c="radio station 3"><b>Fluid · SomaFM</b><span>Instrumental hip-hop</span></div>
+    <div data-c="radio station 4"><b>Lush · SomaFM</b><span>Mellow vocals</span></div>
+    <div data-c="radio station 5"><b>Drone Zone · SomaFM</b><span>Ambient, for sleep</span></div>
+    <div data-c="radio station 6"><b>Code Radio</b><span>Beats to focus</span></div>
+    <div data-c="radio station 7"><b>Radio Paradise Mellow</b><span>Soft mix</span></div>
+    <div data-c="radio station 8"><b>Chillsynth · Nightride FM</b><span>Chill synthwave</span></div>
+  </div>
+  <div class="grid three">
+    <button data-c="radio sleep 30">Sleep 30</button>
+    <button data-c="radio sleep 60">Sleep 60</button>
+    <button data-c="radio sleep 90">Sleep 90</button>
+  </div>
+  <details style="margin-top:10px"><summary>＋ Add a station</summary>
+    <div class="pr qs" style="margin-top:8px"><input id="rn" type="text" placeholder="Station name" autocomplete="off" autocorrect="off"></div>
+    <div class="pr qs"><input id="ru" type="url" placeholder="https:// stream link" autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false"><button id="rgo" type="button">Add</button></div>
+  </details>
 
   <h2>Screen</h2>
   <div class="grid">
@@ -236,6 +265,12 @@
   $("qr").addEventListener("change", function () {
     var n = parseInt($("qr").value, 10);
     if (n >= 1) send("quran reciter " + n);
+  });
+  $("rgo").addEventListener("click", function () {
+    var n = $("rn").value.replace(/^\s+|\s+$/g, ""), u = $("ru").value.replace(/^\s+|\s+$/g, "");
+    if (!n || !/^https:\/\/\S+$/i.test(u)) { status("Enter a name and an https:// link.", true); return; }
+    send("radio add " + u + " " + n);
+    $("rn").value = ""; $("ru").value = "";
   });
   var SURAHS = [[1,"Al-Fatihah","الفاتحة"],[2,"Al-Baqarah","البقرة"],[3,"Ali 'Imran","آل عمران"],[4,"An-Nisa","النساء"],[5,"Al-Ma'idah","المائدة"],[6,"Al-An'am","الأنعام"],[7,"Al-A'raf","الأعراف"],[8,"Al-Anfal","الأنفال"],[9,"At-Tawbah","التوبة"],[10,"Yunus","يونس"],[11,"Hud","هود"],[12,"Yusuf","يوسف"],[13,"Ar-Ra'd","الرعد"],[14,"Ibrahim","ابراهيم"],[15,"Al-Hijr","الحجر"],[16,"An-Nahl","النحل"],[17,"Al-Isra","الإسراء"],[18,"Al-Kahf","الكهف"],[19,"Maryam","مريم"],[20,"Taha","طه"],[21,"Al-Anbya","الأنبياء"],[22,"Al-Hajj","الحج"],[23,"Al-Mu'minun","المؤمنون"],[24,"An-Nur","النور"],[25,"Al-Furqan","الفرقان"],[26,"Ash-Shu'ara","الشعراء"],[27,"An-Naml","النمل"],[28,"Al-Qasas","القصص"],[29,"Al-'Ankabut","العنكبوت"],[30,"Ar-Rum","الروم"],[31,"Luqman","لقمان"],[32,"As-Sajdah","السجدة"],[33,"Al-Ahzab","الأحزاب"],[34,"Saba","سبإ"],[35,"Fatir","فاطر"],[36,"Ya-Sin","يس"],[37,"As-Saffat","الصافات"],[38,"Sad","ص"],[39,"Az-Zumar","الزمر"],[40,"Ghafir","غافر"],[41,"Fussilat","فصلت"],[42,"Ash-Shuraa","الشورى"],[43,"Az-Zukhruf","الزخرف"],[44,"Ad-Dukhan","الدخان"],[45,"Al-Jathiyah","الجاثية"],[46,"Al-Ahqaf","الأحقاف"],[47,"Muhammad","محمد"],[48,"Al-Fath","الفتح"],[49,"Al-Hujurat","الحجرات"],[50,"Qaf","ق"],[51,"Adh-Dhariyat","الذاريات"],[52,"At-Tur","الطور"],[53,"An-Najm","النجم"],[54,"Al-Qamar","القمر"],[55,"Ar-Rahman","الرحمن"],[56,"Al-Waqi'ah","الواقعة"],[57,"Al-Hadid","الحديد"],[58,"Al-Mujadila","المجادلة"],[59,"Al-Hashr","الحشر"],[60,"Al-Mumtahanah","الممتحنة"],[61,"As-Saf","الصف"],[62,"Al-Jumu'ah","الجمعة"],[63,"Al-Munafiqun","المنافقون"],[64,"At-Taghabun","التغابن"],[65,"At-Talaq","الطلاق"],[66,"At-Tahrim","التحريم"],[67,"Al-Mulk","الملك"],[68,"Al-Qalam","القلم"],[69,"Al-Haqqah","الحاقة"],[70,"Al-Ma'arij","المعارج"],[71,"Nuh","نوح"],[72,"Al-Jinn","الجن"],[73,"Al-Muzzammil","المزمل"],[74,"Al-Muddaththir","المدثر"],[75,"Al-Qiyamah","القيامة"],[76,"Al-Insan","الانسان"],[77,"Al-Mursalat","المرسلات"],[78,"An-Naba","النبإ"],[79,"An-Nazi'at","النازعات"],[80,"'Abasa","عبس"],[81,"At-Takwir","التكوير"],[82,"Al-Infitar","الإنفطار"],[83,"Al-Mutaffifin","المطففين"],[84,"Al-Inshiqaq","الإنشقاق"],[85,"Al-Buruj","البروج"],[86,"At-Tariq","الطارق"],[87,"Al-A'la","الأعلى"],[88,"Al-Ghashiyah","الغاشية"],[89,"Al-Fajr","الفجر"],[90,"Al-Balad","البلد"],[91,"Ash-Shams","الشمس"],[92,"Al-Layl","الليل"],[93,"Ad-Duhaa","الضحى"],[94,"Ash-Sharh","الشرح"],[95,"At-Tin","التين"],[96,"Al-'Alaq","العلق"],[97,"Al-Qadr","القدر"],[98,"Al-Bayyinah","البينة"],[99,"Az-Zalzalah","الزلزلة"],[100,"Al-'Adiyat","العاديات"],[101,"Al-Qari'ah","القارعة"],[102,"At-Takathur","التكاثر"],[103,"Al-'Asr","العصر"],[104,"Al-Humazah","الهمزة"],[105,"Al-Fil","الفيل"],[106,"Quraysh","قريش"],[107,"Al-Ma'un","الماعون"],[108,"Al-Kawthar","الكوثر"],[109,"Al-Kafirun","الكافرون"],[110,"An-Nasr","النصر"],[111,"Al-Masad","المسد"],[112,"Al-Ikhlas","الإخلاص"],[113,"Al-Falaq","الفلق"],[114,"An-Nas","الناس"]];
   function norm(x) {
