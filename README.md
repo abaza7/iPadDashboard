@@ -624,3 +624,12 @@ Requires the appropriate Playwright/Python and Chromium dependencies. In previou
 | **v19.0** | Final planned maintainability update; state and remote-storage hardening |
 
 **Documentation baseline:** v19.0 source package. Before a production deployment, verify the actual target device, hosted APIs, and audio behaviors using the regression checklist above.
+
+
+## v19.2 — ntfy traffic reduction
+- Dashboard periodic status heartbeat changed to at most once every 2 minutes when idle.
+- Media elapsed-time updates do not independently trigger status messages.
+- Fallback polling reduced to once per minute and skipped when SSE is healthy.
+- HTTP 429 rate limits introduce exponential backoff (and honor `Retry-After` seconds when provided).
+- Phone blocks overlapping sends and reports rate limiting separately from connectivity failures.
+- No new pairing needed. A stale heartbeat indicator may display briefly during background Safari suspension.

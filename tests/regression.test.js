@@ -19,7 +19,7 @@ for (const name of ['index.html','remote.html']) {
 for (const f of ['js/core/shared.js','js/core/catalog.js','js/core/ui.js','js/core/network.js','js/core/state.js','js/core/media-controller.js','js/core/components.js','js/core/diagnostics.js','js/dashboard/index.js','js/remote/remote.js','sw.js']) new vm.Script(read(f), { filename:f });
 const sw = read('sw.js');
 for(const f of ['./css/index.css','./css/remote.css','./js/core/shared.js','./js/core/catalog.js','./js/core/ui.js','./js/core/network.js','./js/core/state.js','./js/core/media-controller.js','./js/core/components.js','./js/core/diagnostics.js','./js/dashboard/index.js','./js/remote/remote.js']) assert(sw.includes(`"${f}"`),`Cache missing ${f}`);
-assert(sw.includes('ipad-dashboard-v19.0'));
+assert(sw.includes('ipad-dashboard-v19.2'));
 const data = {};
 const storage = { getItem:k => data[k] ?? null, setItem:(k,v)=>{data[k]=v;} };
 const context={window:{localStorage:storage,crypto:{getRandomValues: a=>crypto.randomFillSync(a),subtle:crypto.webcrypto.subtle}},crypto:crypto.webcrypto,TextEncoder,Promise,Uint8Array};

@@ -1,0 +1,17 @@
+"use strict";
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+const root=path.resolve(__dirname,'..');
+const dash=fs.readFileSync(path.join(root,'src/dashboard/shell-before.js'),'utf8');
+const remote=fs.readFileSync(path.join(root,'js/remote/remote.js'),'utf8');
+assert(dash.includes('Date.now() - lastStateSend < 120000'));
+assert(dash.includes('setInterval(remotePoll, 60 * 1000)'));
+assert(dash.includes('remoteES.readyState === 1'));
+assert(dash.includes('relayBackoffUntil'));
+assert(dash.includes('statusBusy'));
+assert(remote.includes('relayThrottled(r)'));
+assert(remote.includes('ntfy rate limited (HTTP 429)'));
+assert(remote.includes('age < 150 ? "● Online"'));
+assert(remote.includes('if (sending) return Promise.resolve()'));
+console.log('PASS: v19.2 status throttling, live-stream polling guard and 429 backoff');

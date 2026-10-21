@@ -13,6 +13,12 @@
   var hmac = DashboardShared.hmac;
 
   var es = null, seen = {}, pending = null, pollN = 0;
+  var relayBackoffUntil = 0, relayFailures = 0, sending = false;
+  function relayThrottled(response) {
+    relayFailures = Math.min(relayFailures + 1, 7);
+    var secs = Number(response && response.headers && response.headers.get("Retry-After"));
+    relayBackoffUntil = Date.now() + (secs > 0 ? secs * 1000 : Math.min(1800000, 30000 * Math.pow(2, relayFailures - 1)));
+  }
   var isApp = !!(window.navigator.standalone || (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches));
 
   function status(t, err) { var e = $("st"); e.textContent = t; e.className = err ? "err" : ""; }
@@ -21,7 +27,7 @@
   var liveState = null, liveSeen = 0, liveSequence = -1, liveMessageIds = {}, liveBoot = "", ackAt = 0, commandAt = 0;
   function updateLive() {
     var age = liveSeen ? Math.round((Date.now() - liveSeen) / 1000) : -1;
-    $("liveBadge").textContent = age < 0 ? "Waiting…" : age < 55 ? "● Online" : age < 120 ? "● Stale" : "● No recent heartbeat";
+    $("liveBadge").textContent = age < 0 ? "Waiting…" : age < 150 ? "● Online" : age < 270 ? "● Stale" : "● No recent heartbeat";
     if (!liveState) return;
     var st = liveState, q = st.quran || {}, r = st.radio || {};
     $("liveMeta").textContent = "Theme: " + (st.theme || "—") + " · Screen: " + (st.screen || "—") + " · " + (st.version || "") + " · Audio: " + (st.audioReady ? "ready" : "needs tap");
@@ -75,7 +81,9 @@
 
   function poll() {
     if (!topic) return;
+    if ((es && es.readyState === 1) || Date.now() < relayBackoffUntil) return;
     fetch("https://ntfy.sh/" + topic + "/json?poll=1&since=1m").then(function (r) {
+      if (r.status === 429) relayThrottled(r);
       if (!r.ok) throw new Error("HTTP " + r.status);
       return r.text();
     }).then(function (t) {
@@ -89,7 +97,7 @@
     var timer = setInterval(function () {
       if (!pending) { clearInterval(timer); return; }
       pollN++;
-      poll();
+      if (pollN === 2) poll();
       if (pollN >= 5) {
         clearInterval(timer);
         if (pending) {
@@ -102,19 +110,29 @@
   }
 
   function send(cmd, quiet) {
+    if (Date.now() < relayBackoffUntil) { status("ntfy rate limited — wait before retrying.", true); return Promise.resolve(); }
+    if (sending) return Promise.resolve();
+    sending = true;
     if (!quiet) status("Sending…"); commandAt = Date.now();
-    if (!secret || !crypto.subtle) { status("Remote needs a new v16.1 pairing link from iPad Settings.", true); return Promise.resolve(); }
+    if (!secret || !crypto.subtle) { sending = false; status("Remote needs a new v16.1 pairing link from iPad Settings.", true); return Promise.resolve(); }
     var payload = "v16.1|" + Date.now() + "|" + randomHex(16) + "|" + cmd;
     return hmac(secret, payload).then(function (sig) {
       return fetch("https://ntfy.sh/" + topic, { method: "POST", body: payload + "|" + sig });
     }).then(function (r) {
+      if (r.status === 429) relayThrottled(r);
       if (!r.ok) throw new Error("HTTP " + r.status);
+      relayFailures = 0; relayBackoffUntil = 0;
       if (!quiet) status("Sent: " + cmd + " – waiting for the iPad…");
       waitForAck(cmd);
     }).catch(function (e) {
-      status("Couldn't send (" + (e && e.message || "no internet") + "). Check this phone's connection.", true);
-      ipad("Can't reach the relay (ntfy.sh) from this phone.", "bad");
-    });
+      if (Date.now() < relayBackoffUntil) {
+        status("ntfy rate limited (HTTP 429). Please wait before retrying.", true);
+        ipad("ntfy.sh is limiting requests. Pairing is not the problem; allow the relay to recover.", "bad");
+      } else {
+        status("Couldn't send (" + (e && e.message || "no internet") + "). Check this phone's connection.", true);
+        ipad("Can't reach the relay (ntfy.sh) from this phone.", "bad");
+      }
+    }).then(function () { sending = false; }, function () { sending = false; });
   }
 
   function listen() {

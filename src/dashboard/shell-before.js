@@ -27,7 +27,7 @@
     nightTo:   parseInt(q.nightTo   || "6", 10)
   };
 
-  var BUILD = "2026-10-21.v19.0";           // bump on every release (used by the update check)
+  var BUILD = "2026-10-21.v19.2";           // bump on every release (used by the update check)
   var RETRY_MS = 5 * 60 * 1000;         // retry failed fetches every 5 minutes
   var ALERTABLE = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"];
   var PRAYER_NAMES = ["Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"];
@@ -1002,15 +1002,25 @@
     return out;
   }
   var cleanTopic = DashboardShared.cleanTopic;
+  var relayBackoffUntil = 0, relayFailures = 0;
+  function noteRelayFailure(r) {
+    relayFailures = Math.min(relayFailures + 1, 7);
+    var retry = Number(r && r.headers && r.headers.get("Retry-After"));
+    var delay = retry > 0 ? retry * 1000 : Math.min(30 * 60000, 30000 * Math.pow(2, relayFailures - 1));
+    relayBackoffUntil = Date.now() + delay;
+  }
   function remotePost(text) {
+    if (Date.now() < relayBackoffUntil) return Promise.reject(new Error("Relay rate limited; waiting to retry"));
     if (!remoteTopic) return Promise.reject(new Error("off"));
     return fetch("https://ntfy.sh/" + remoteTopic, { method: "POST", body: text }).then(function (r) {
+      if (r.status === 429) noteRelayFailure(r);
       if (!r.ok) throw new Error("HTTP " + r.status);
+      relayFailures = 0; relayBackoffUntil = 0;
     });
   }
   function remoteSend(text) { remotePost(text).catch(function () {}); }
   // v17 status messages are signed separately from commands. No credentials in payload.
-  var stateSequence = 0, lastPublished = "", lastStateSend = 0, lastStateError = "";
+  var stateSequence = 0, lastPublished = "", lastStateSend = 0, lastStateError = "", statusBusy = false;
   function dashboardState() {
     var qname = "", qcount = 0;
     if (Q.active && window.QDATA && QDATA.s[Q.sura - 1]) { qname = QDATA.s[Q.sura - 1][1]; qcount = QDATA.s[Q.sura - 1][2]; }
@@ -1036,16 +1046,25 @@
     syncApplicationProjection(state);
     if (!remoteTopic || !remoteSecret || !crypto.subtle) return;
     // updated timestamp changes each call; compare semantic fields instead
-    state.updated = 0; var semantic = JSON.stringify(state); state.updated = Date.now();
-    if (!force && semantic === lastPublished && Date.now() - lastStateSend < 25000) return;
-    if (!force && Date.now() - lastStateSend < 4500) return;
-    lastPublished = semantic; lastStateSend = Date.now();
+    state.updated = 0;
+    if (state.quran) { state.quran.elapsed = 0; state.quran.duration = 0; }
+    var semantic = JSON.stringify(state); state.updated = Date.now();
+    // Restore real playback timing in transmitted snapshot.
+    if (state.quran) { state.quran.elapsed = Math.floor(qa.currentTime || 0); state.quran.duration = isFinite(qa.duration) ? Math.floor(qa.duration) : 0; }
+    // Only publish when meaningful data changes, or a sparse heartbeat every 2 minutes.
+    // Progress/time changes are excluded to avoid hitting ntfy.sh free-tier quotas.
+    if (Date.now() < relayBackoffUntil || statusBusy) return;
+    if (!force && semantic === lastPublished && Date.now() - lastStateSend < 120000) return;
+    if (!force && Date.now() - lastStateSend < 15000) return;
+    statusBusy = true;
     var payload = "v17state|" + Date.now() + "|" + randomHex(16) + "|" + (++stateSequence) + "|" + encodeURIComponent(JSON.stringify(state));
     hmac(remoteSecret, payload).then(function (sig) { return remotePost(payload + "|" + sig); })
-      .then(function () { lastStateError = ""; }, function (e) { lastStateError = String(e && e.message || e); });
+      .then(function () { lastPublished = semantic; lastStateSend = Date.now(); lastStateError = ""; },
+        function (e) { lastStateError = String(e && e.message || e); })
+      .then(function () { statusBusy = false; }, function () { statusBusy = false; });
   }
-  setInterval(function () { publishDashboardState(false); }, 5000);
-  setTimeout(function () { publishDashboardState(true); }, 7000);
+  setInterval(function () { publishDashboardState(false); }, 30000);
+  setTimeout(function () { publishDashboardState(false); }, 7000);
   function remoteClose() { if (remoteES) { try { remoteES.close(); } catch (e) {} remoteES = null; } }
   function setRemote(t) {
     remoteTopic = cleanTopic(t);
@@ -1099,8 +1118,11 @@
   function remotePoll() {
     if (!remoteTopic) return;
     var url = "https://ntfy.sh/" + remoteTopic + "/json?poll=1&since=" + encodeURIComponent(lastMsgId || "2m");
+    if (remoteES && remoteES.readyState === 1) return;
+    if (Date.now() < relayBackoffUntil) return;
     fetch(url).then(function (r) {
-      if (!r.ok) { lastMsgId = ""; throw new Error("HTTP " + r.status); }
+      if (r.status === 429) { noteRelayFailure(r); throw new Error("HTTP 429"); }
+      if (!r.ok) throw new Error("HTTP " + r.status);
       return r.text();
     }).then(function (t) {
       remoteErr = "";
@@ -1109,7 +1131,7 @@
     }).catch(function (e) { remoteErr = String(e && e.message || e); setRState(); });
   }
   setInterval(function () { if (remoteTopic && (!remoteES || remoteES.readyState === 2)) remoteConnect(); }, 60 * 1000);
-  setInterval(remotePoll, 12 * 1000);
+  setInterval(remotePoll, 60 * 1000);
 
   function copyRemoteLink() {
     var url = remoteURL(), box = $("rtest");
