@@ -4,8 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Remote">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#231a17">
+<link rel="manifest" href="remote.webmanifest">
+<link rel="apple-touch-icon" href="icons/remote-180.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/remote-180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/remote-192.png">
 <meta name="robots" content="noindex">
 <title>Dashboard Remote</title>
 <style>
@@ -15,7 +21,7 @@
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; background: var(--bg); color: var(--fg); font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; -webkit-text-size-adjust: 100%; }
-  body { padding: 16px 16px calc(24px + env(safe-area-inset-bottom)); max-width: 560px; margin: 0 auto; }
+  body { padding: calc(16px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom)); max-width: 560px; margin: 0 auto; }
   h1 { font-size: 22px; margin: 8px 0 4px; font-weight: 600; }
   .sub { color: var(--dim); font-size: 14px; margin-bottom: 14px; }
   h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--dim); margin: 22px 0 8px; font-weight: 600; }
@@ -35,6 +41,20 @@
   input { width: 100%; font: inherit; font-size: 18px; padding: 14px; border-radius: 12px; border: 1px solid var(--btn); background: var(--card); color: var(--fg); }
   .setup { background: var(--card); border-radius: 14px; padding: 14px; }
   .note { color: var(--dim); font-size: 13px; margin-top: 22px; line-height: 1.45; }
+  select { font: inherit; color: var(--fg); background: var(--btn); border: 0; border-radius: 10px; -webkit-appearance: none; appearance: none; padding-right: 30px !important;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1l5 5 5-5' fill='none' stroke='%23999' stroke-width='2' stroke-linecap='round'/></svg>"); background-repeat: no-repeat; background-position: right 12px center; }
+  .qs { padding-right: 8px; }
+  .qs input { flex: 1; min-width: 0; padding: 10px 12px; font-size: 16px; }
+  .ql { background: var(--card); border-radius: 14px; margin: -2px 0 8px; max-height: 38vh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .ql div { display: flex; justify-content: space-between; gap: 10px; padding: 12px 14px; border-top: 1px solid var(--btn); font-size: 16px; }
+  .ql div:first-child { border-top: 0; }
+  .ql div:active { background: var(--btn); }
+  .ql i { font-style: normal; color: var(--dim); min-width: 2.2em; }
+  .ql b { flex: 1; font-weight: 500; }
+  .ql span { font-size: 18px; color: var(--dim); }
+  details.app { background: var(--card); border-radius: 14px; padding: 12px 14px; margin-top: 18px; font-size: 14px; color: var(--dim); line-height: 1.5; }
+  details.app summary { cursor: pointer; color: var(--fg); font-weight: 600; }
+  details.app p { margin: 8px 0 0; }
   [hidden] { display: none !important; }
 </style>
 </head>
@@ -67,7 +87,8 @@
   </div>
   <div class="pr" style="margin-top:10px"><b>Reciter</b><select id="qr" style="max-width:62%;padding:10px;font-size:16px"><option value="">Choose…</option><option value="1">Mishary Alafasy</option><option value="2">Abdul Basit (Murattal)</option><option value="3">Mahmoud Khalil Al-Husary</option><option value="4">Mohamed Al-Minshawi (Murattal)</option><option value="5">Abdurrahman As-Sudais</option><option value="6">Saud Ash-Shuraim</option><option value="7">Maher Al-Muaiqly</option><option value="8">Saad Al-Ghamdi</option><option value="9">Ahmed Al-Ajamy</option><option value="10">Islam Sobhi</option></select></div>
   <!-- keep this list in the same order as QREC in index.html (the iPad is told the number) -->
-  <div class="pr" style="margin-top:10px"><b>Surah</b><input id="qn" type="number" inputmode="numeric" min="1" max="114" placeholder="1–114" style="width:90px;padding:10px;font-size:16px"><button id="qgo" type="button">Play</button></div>
+  <div class="pr qs" style="margin-top:10px"><input id="qn" type="search" placeholder="Surah name or number" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="go"><button id="qgo" type="button">Play</button></div>
+  <div class="ql" id="ql" hidden></div>
 
   <h2>Screen</h2>
   <div class="grid">
@@ -100,6 +121,11 @@
     <button data-c="reload" data-confirm="1">Reload app</button>
     <button id="forget" type="button">Change code</button>
   </div>
+  <details class="app" id="appHelp">
+    <summary>Add this remote to your Home Screen</summary>
+    <p><b>iPhone / iPad:</b> open this page in Safari, tap the Share button, then <b>Add to Home Screen</b>. Do it while you're connected, so the code is saved in the shortcut. If it ever asks for the code, enter it once.</p>
+    <p><b>Android:</b> in Chrome tap the ⋮ menu, then <b>Install app</b> (or <b>Add to Home screen</b>).</p>
+  </details>
   <div id="st"></div>
   <div class="note">Commands go through the free ntfy.sh service to the dashboard, which must be open, awake and online. “Reload app” makes iPadOS require one tap on the iPad before adhan sound works again.</div>
 </div>
@@ -113,6 +139,7 @@
   function get() { try { return localStorage.getItem("remote_topic") || ""; } catch (e) { return ""; } }
   function put(t) { try { localStorage.setItem("remote_topic", t); } catch (e) {} }
   var es = null, seen = {}, pending = null, pollN = 0;
+  var isApp = !!(window.navigator.standalone || (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches));
 
   function status(t, err) { var e = $("st"); e.textContent = t; e.className = err ? "err" : ""; }
   function ipad(t, cls) { var e = $("ipad"); e.hidden = !t; e.textContent = t || ""; e.className = "ipad " + (cls || ""); }
@@ -179,7 +206,12 @@
 
   function show() {
     topic = clean(location.hash.slice(1)) || clean(get());
-    if (location.hash) { put(topic); try { history.replaceState(null, "", location.pathname); } catch (e) {} }
+    if (location.hash) {
+      put(topic);
+      // In the browser keep the code in the address, so "Add to Home Screen" saves a link that opens already connected.
+      if (isApp) { try { history.replaceState(null, "", location.pathname); } catch (e) {} }
+    }
+    $("appHelp").hidden = isApp;
     var has = !!topic;
     $("setup").hidden = has; $("main").hidden = !has;
     $("where").textContent = has ? "Connected to code " + topic.slice(0, 4) + "-…" : "";
@@ -205,9 +237,48 @@
     var n = parseInt($("qr").value, 10);
     if (n >= 1) send("quran reciter " + n);
   });
+  var SURAHS = [[1,"Al-Fatihah","الفاتحة"],[2,"Al-Baqarah","البقرة"],[3,"Ali 'Imran","آل عمران"],[4,"An-Nisa","النساء"],[5,"Al-Ma'idah","المائدة"],[6,"Al-An'am","الأنعام"],[7,"Al-A'raf","الأعراف"],[8,"Al-Anfal","الأنفال"],[9,"At-Tawbah","التوبة"],[10,"Yunus","يونس"],[11,"Hud","هود"],[12,"Yusuf","يوسف"],[13,"Ar-Ra'd","الرعد"],[14,"Ibrahim","ابراهيم"],[15,"Al-Hijr","الحجر"],[16,"An-Nahl","النحل"],[17,"Al-Isra","الإسراء"],[18,"Al-Kahf","الكهف"],[19,"Maryam","مريم"],[20,"Taha","طه"],[21,"Al-Anbya","الأنبياء"],[22,"Al-Hajj","الحج"],[23,"Al-Mu'minun","المؤمنون"],[24,"An-Nur","النور"],[25,"Al-Furqan","الفرقان"],[26,"Ash-Shu'ara","الشعراء"],[27,"An-Naml","النمل"],[28,"Al-Qasas","القصص"],[29,"Al-'Ankabut","العنكبوت"],[30,"Ar-Rum","الروم"],[31,"Luqman","لقمان"],[32,"As-Sajdah","السجدة"],[33,"Al-Ahzab","الأحزاب"],[34,"Saba","سبإ"],[35,"Fatir","فاطر"],[36,"Ya-Sin","يس"],[37,"As-Saffat","الصافات"],[38,"Sad","ص"],[39,"Az-Zumar","الزمر"],[40,"Ghafir","غافر"],[41,"Fussilat","فصلت"],[42,"Ash-Shuraa","الشورى"],[43,"Az-Zukhruf","الزخرف"],[44,"Ad-Dukhan","الدخان"],[45,"Al-Jathiyah","الجاثية"],[46,"Al-Ahqaf","الأحقاف"],[47,"Muhammad","محمد"],[48,"Al-Fath","الفتح"],[49,"Al-Hujurat","الحجرات"],[50,"Qaf","ق"],[51,"Adh-Dhariyat","الذاريات"],[52,"At-Tur","الطور"],[53,"An-Najm","النجم"],[54,"Al-Qamar","القمر"],[55,"Ar-Rahman","الرحمن"],[56,"Al-Waqi'ah","الواقعة"],[57,"Al-Hadid","الحديد"],[58,"Al-Mujadila","المجادلة"],[59,"Al-Hashr","الحشر"],[60,"Al-Mumtahanah","الممتحنة"],[61,"As-Saf","الصف"],[62,"Al-Jumu'ah","الجمعة"],[63,"Al-Munafiqun","المنافقون"],[64,"At-Taghabun","التغابن"],[65,"At-Talaq","الطلاق"],[66,"At-Tahrim","التحريم"],[67,"Al-Mulk","الملك"],[68,"Al-Qalam","القلم"],[69,"Al-Haqqah","الحاقة"],[70,"Al-Ma'arij","المعارج"],[71,"Nuh","نوح"],[72,"Al-Jinn","الجن"],[73,"Al-Muzzammil","المزمل"],[74,"Al-Muddaththir","المدثر"],[75,"Al-Qiyamah","القيامة"],[76,"Al-Insan","الانسان"],[77,"Al-Mursalat","المرسلات"],[78,"An-Naba","النبإ"],[79,"An-Nazi'at","النازعات"],[80,"'Abasa","عبس"],[81,"At-Takwir","التكوير"],[82,"Al-Infitar","الإنفطار"],[83,"Al-Mutaffifin","المطففين"],[84,"Al-Inshiqaq","الإنشقاق"],[85,"Al-Buruj","البروج"],[86,"At-Tariq","الطارق"],[87,"Al-A'la","الأعلى"],[88,"Al-Ghashiyah","الغاشية"],[89,"Al-Fajr","الفجر"],[90,"Al-Balad","البلد"],[91,"Ash-Shams","الشمس"],[92,"Al-Layl","الليل"],[93,"Ad-Duhaa","الضحى"],[94,"Ash-Sharh","الشرح"],[95,"At-Tin","التين"],[96,"Al-'Alaq","العلق"],[97,"Al-Qadr","القدر"],[98,"Al-Bayyinah","البينة"],[99,"Az-Zalzalah","الزلزلة"],[100,"Al-'Adiyat","العاديات"],[101,"Al-Qari'ah","القارعة"],[102,"At-Takathur","التكاثر"],[103,"Al-'Asr","العصر"],[104,"Al-Humazah","الهمزة"],[105,"Al-Fil","الفيل"],[106,"Quraysh","قريش"],[107,"Al-Ma'un","الماعون"],[108,"Al-Kawthar","الكوثر"],[109,"Al-Kafirun","الكافرون"],[110,"An-Nasr","النصر"],[111,"Al-Masad","المسد"],[112,"Al-Ikhlas","الإخلاص"],[113,"Al-Falaq","الفلق"],[114,"An-Nas","الناس"]];
+  function norm(x) {
+    return String(x || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f\u064b-\u0652\u0670\u06d6-\u06ed\u0640]/g, "")
+      .replace(/[\u0623\u0625\u0622\u0671]/g, "\u0627").replace(/\u0649/g, "\u064a").replace(/\u0629/g, "\u0647").replace(/[^a-z0-9\u0621-\u064a]/g, "");
+  }
+  SURAHS.forEach(function (r) { r.k = norm(r[1]) + "|" + norm(r[2]); });
+  function matches(q) {
+    var n = norm(q), out = [], i;
+    if (!n) return SURAHS.slice();
+    if (/^[0-9]+$/.test(n)) {
+      for (i = 0; i < SURAHS.length; i++) if (String(SURAHS[i][0]) === n) out.push(SURAHS[i]);
+      for (i = 0; i < SURAHS.length; i++) if (String(SURAHS[i][0]) !== n && String(SURAHS[i][0]).indexOf(n) === 0) out.push(SURAHS[i]);
+      return out;
+    }
+    for (i = 0; i < SURAHS.length; i++) if (SURAHS[i].k.indexOf(n) >= 0) out.push(SURAHS[i]);
+    out.sort(function (a, b) { return (a.k.indexOf(n) > a.k.indexOf("|") ? 1 : 0) - (b.k.indexOf(n) > b.k.indexOf("|") ? 1 : 0) || a[0] - b[0]; });
+    return out;
+  }
+  function drawList() {
+    var m = matches($("qn").value), h = "", i, box = $("ql");
+    for (i = 0; i < m.length; i++) h += '<div data-n="' + m[i][0] + '"><i>' + m[i][0] + "</i><b>" + m[i][1] + "</b><span>" + m[i][2] + "</span></div>";
+    box.innerHTML = h || '<div style="color:var(--dim)">No surah matches “' + $("qn").value.replace(/[<>&]/g, "") + '”</div>';
+    box.hidden = false;
+  }
+  function playSurah(n) {
+    var r = SURAHS[n - 1];
+    $("qn").value = r[1]; $("ql").hidden = true; $("qn").blur();
+    send("quran surah " + n);
+  }
+  $("qn").addEventListener("focus", drawList);
+  $("qn").addEventListener("input", drawList);
+  $("qn").addEventListener("blur", function () { setTimeout(function () { if (document.activeElement !== $("qn")) $("ql").hidden = true; }, 250); });
+  $("qn").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); $("qgo").click(); } });
+  $("ql").addEventListener("click", function (e) {
+    var t = e.target;
+    while (t && t !== this && !(t.getAttribute && t.getAttribute("data-n"))) t = t.parentNode;
+    if (t && t !== this) playSurah(+t.getAttribute("data-n"));
+  });
   $("qgo").addEventListener("click", function () {
-    var n = parseInt($("qn").value, 10);
-    if (n >= 1 && n <= 114) send("quran surah " + n); else { status("Enter a surah number from 1 to 114.", true); $("qn").focus(); }
+    var m = matches($("qn").value);
+    if ($("qn").value.replace(/\s/g, "") && m.length && m.length < SURAHS.length) playSurah(m[0][0]);
+    else { status("Type a surah name or number (1–114), or pick one from the list.", true); $("qn").focus(); }
   });
   $("save").addEventListener("click", function () {
     var t = clean($("code").value.trim().toLowerCase());
