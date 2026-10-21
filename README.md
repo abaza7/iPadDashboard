@@ -244,4 +244,3 @@ The music-note button next to the Quran button opens the radio. It streams live 
 - **Connection loss:** retries after a few seconds, then every minute; the strip says "Connection lost – reconnecting…".
 - **Weekly refresh** is skipped while sound is playing.
 - **Phone remote:** a "Lofi radio" section with play/pause/stop, the stations by name, sleep timers and "Add a station". Commands: `radio play`, `radio pause`, `radio stop`, `radio station N`, `radio sleep M`, `radio add <https link> <name>`. The station list in `remote.html` must match `RST` order.
-- The Quran button now uses a "القرآن الكريم" badge icon.

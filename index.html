@@ -509,7 +509,7 @@
     nightTo:   parseInt(q.nightTo   || "6", 10)
   };
 
-  var BUILD = "2026-10-21.1";           // bump on every release (used by the update check)
+  var BUILD = "2026-10-21.3";           // bump on every release (used by the update check)
   var RETRY_MS = 5 * 60 * 1000;         // retry failed fetches every 5 minutes
   var ALERTABLE = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"];
   var PRAYER_NAMES = ["Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"];
@@ -1928,7 +1928,7 @@
   }
   function qUI() {
     var b = $("qbtn"), m = $("qmini");
-    b.innerHTML = ICON.badge; b.className = "qbtn" + (Q.active ? " on" : "");
+    b.innerHTML = ICON.book; b.className = "qbtn" + (Q.active ? " on" : "");
     document.body.classList.toggle("qon", !!(Q.active || (R && R.active)));
     updateStatus();
     if (!Q.active || !window.QDATA) { m.hidden = true; document.body.classList.remove("qv"); positionMini(); qPanelLive(); return; }
@@ -2050,10 +2050,10 @@
   // ---------- Lofi radio: live internet streams (HTTPS only), plus your own stations ----------
   var RST = [
     { n: "Chillhop · Flux FM", s: "Chillhop", d: "Lofi hip-hop beats", u: "https://streams.fluxfm.de/Chillhop/mp3-128/streams.fluxfm.de/" },
-    { n: "Groove Salad · SomaFM", s: "Groove Salad", d: "Downtempo chill", u: "https://ice1.somafm.com/groovesalad-128-mp3" },
-    { n: "Fluid · SomaFM", s: "Fluid", d: "Instrumental hip-hop", u: "https://ice1.somafm.com/fluid-128-mp3" },
-    { n: "Lush · SomaFM", s: "Lush", d: "Mellow vocals", u: "https://ice1.somafm.com/lush-128-mp3" },
-    { n: "Drone Zone · SomaFM", s: "Drone Zone", d: "Ambient, for sleep", u: "https://ice1.somafm.com/dronezone-128-mp3" },
+    { n: "Groove Salad · SomaFM", s: "Groove Salad", d: "Downtempo chill", u: "https://ice.somafm.com/groovesalad" },
+    { n: "Fluid · SomaFM", s: "Fluid", d: "Instrumental hip-hop", u: "https://ice.somafm.com/fluid" },
+    { n: "Lush · SomaFM", s: "Lush", d: "Mellow vocals", u: "https://ice.somafm.com/lush" },
+    { n: "Drone Zone · SomaFM", s: "Drone Zone", d: "Ambient, for sleep", u: "https://ice.somafm.com/dronezone" },
     { n: "Code Radio", s: "Code Radio", d: "Beats to focus", u: "https://coderadio-admin-v2.freecodecamp.org/listen/coderadio/radio.mp3" },
     { n: "Radio Paradise Mellow", s: "Paradise Mellow", d: "Soft mix", u: "https://stream.radioparadise.com/mellow-128" },
     { n: "Chillsynth · Nightride FM", s: "Chillsynth", d: "Chill synthwave", u: "https://stream.nightride.fm/chillsynth.mp3" }
