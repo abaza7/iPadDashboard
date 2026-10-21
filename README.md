@@ -244,3 +244,17 @@ The music-note button next to the Quran button opens the radio. It streams live 
 - **Connection loss:** retries after a few seconds, then every minute; the strip says "Connection lost – reconnecting…".
 - **Weekly refresh** is skipped while sound is playing.
 - **Phone remote:** a "Lofi radio" section with play/pause/stop, the stations by name, sleep timers and "Add a station". Commands: `radio play`, `radio pause`, `radio stop`, `radio station N`, `radio sleep M`, `radio add <https link> <name>`. The station list in `remote.html` must match `RST` order.
+- The Quran button now uses a "القرآن الكريم" badge icon.
+
+## v16.0 reliability foundation (2026-10-21)
+
+- Added **System health** within Settings: app build, session age, online status, audio-unlock status, and last successful refresh for weather, currency rates, and prayer timings.
+- Added bounded, local-only recent event history (40 entries) for source errors/recovery, adhan playback attempts/results, and clock resumption. Clear it in Settings > System health. The log does not contain notification message bodies or remote access codes.
+- Failed background data jobs back off at 5, 10, 20, then 30 minutes; reconnect and foreground events trigger retry attempts for failed jobs. Successful refreshes reset retry delay.
+- Weekly maintenance reload now stays deferred while enabled prayer audio is unlocked, matching update-reload protection.
+- Date rollover detection compares the full local calendar day, not just day of month.
+- Raised service-worker cache namespace to `ipad-dashboard-v16`.
+
+**Deployment:** Copy the contents of the archive to the same static-hosting directory, preserving the `timings/`, `fonts/`, and `icons/` directories. Open Settings > System health after deploying. If offline caching delays the update, reconnect and reload manually at a time when prayer alerts can be re-enabled.
+
+**Remaining v16 work:** remote command authentication/replay protection, configurable settings backup/restore, and real-device Safari/iPadOS 15 validation. Browser autoplay restrictions still require a gesture after a reload; adhan playback cannot be guaranteed while Safari is suspended.

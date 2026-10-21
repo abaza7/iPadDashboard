@@ -509,7 +509,7 @@
     nightTo:   parseInt(q.nightTo   || "6", 10)
   };
 
-  var BUILD = "2026-10-21.3";           // bump on every release (used by the update check)
+  var BUILD = "2026-10-21.v16.0";           // bump on every release (used by the update check)
   var RETRY_MS = 5 * 60 * 1000;         // retry failed fetches every 5 minutes
   var ALERTABLE = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"];
   var PRAYER_NAMES = ["Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"];
@@ -546,10 +546,33 @@
     });
   }
 
+  // v16 bounded local diagnostics; never collect message bodies or remote credentials.
+  var diagLog = load("diaglog") || [];
+  function diag(kind, detail) {
+    diagLog.unshift({ time: Date.now(), kind: kind, detail: String(detail || "").slice(0, 160) });
+    diagLog = diagLog.slice(0, 40);
+    store("diaglog", diagLog);
+  }
+  function friendlyAge(ts) {
+    if (!ts) return "Never";
+    var minutes = Math.max(0, Math.floor((Date.now() - ts) / 60000));
+    return minutes < 1 ? "Just now" : minutes < 60 ? minutes + "m ago" : Math.floor(minutes / 60) + "h ago";
+  }
+  function diagnosticsHTML() {
+    var h = '<div class="srow"><div class="sl"><b>Version ' + esc(BUILD) + '</b><small>Session ' + friendlyAge(pageStart) + ' · Network: ' + (navigator.onLine ? 'online' : 'offline') + ' · Adhan: ' + (unlocked ? 'audio enabled' : 'needs a tap') + '</small></div></div>';
+    jobs.forEach(function (j) {
+      var age = friendlyAge(j.lastOK);
+      var stale = !j.lastOK || (Date.now() - j.lastOK > j.okMs * 2);
+      h += '<div class="srow"><div class="sl"><b>' + esc(j.label) + (j.failing ? ' · Error' : stale ? ' · Stale' : ' · Fresh') + '</b><small>Last success: ' + age + (j.failing ? ' · retry ' + Math.round(j.backoff / 1000) + 's' : '') + '</small></div></div>';
+    });
+    h += '<div class="srow"><div class="sl"><b>Recent events</b><small>Stored locally on this device (last 40)</small></div><div class="sb"><button class="btn ghost" type="button" data-a="diagclear">Clear</button></div></div>';
+    diagLog.slice(0, 8).forEach(function (e) { h += '<div class="note">' + esc(new Date(e.time).toLocaleString()) + ' · ' + esc(e.kind) + ': ' + esc(e.detail) + '</div>'; });
+    return h;
+  }
   // ---------- background jobs: refresh on success, retry every 5 min on failure ----------
   var jobs = [];
   function addJob(label, fn, okMs) {
-    var j = { label: label, fn: fn, okMs: okMs, timer: null, failing: false, running: false };
+    var j = { label: label, fn: fn, okMs: okMs, timer: null, failing: false, running: false, failures: 0, backoff: RETRY_MS, lastOK: load("jobok_" + label) || 0 };
     j.run = function () {
       if (j.running) return;
       clearTimeout(j.timer);
@@ -557,12 +580,16 @@
       var p;
       try { p = fn(); } catch (e) { p = Promise.reject(e); }
       p.then(function () {
-        j.failing = false; j.running = false;
+        if (j.failing) diag("recovered", j.label);
+        j.failing = false; j.running = false; j.failures = 0; j.backoff = RETRY_MS;
+        j.lastOK = Date.now(); store("jobok_" + j.label, j.lastOK);
         j.timer = setTimeout(j.run, j.okMs);
         updateStatus();
-      }, function () {
-        j.failing = true; j.running = false;
-        j.timer = setTimeout(j.run, RETRY_MS);
+      }, function (err) {
+        if (!j.failing) diag("fetch failed", j.label + " (" + (err && err.message || "unknown") + ")");
+        j.failing = true; j.running = false; j.failures++;
+        j.backoff = Math.min(30 * 60 * 1000, RETRY_MS * Math.pow(2, Math.min(j.failures - 1, 4)));
+        j.timer = setTimeout(j.run, j.backoff);
         updateStatus();
       });
     };
@@ -572,7 +599,7 @@
   function updateStatus() {
     var bad = [];
     jobs.forEach(function (j) { if (j.failing) bad.push(j.label); });
-    var full = bad.length ? "Offline: " + bad.join(", ") + " – retrying every 5 min" : "Updated " + hhmm(new Date());
+    var full = bad.length ? "Unavailable: " + bad.join(", ") + " – retrying" : "Updated " + hhmm(new Date());
     $("status").textContent = (bad.length && ((Q && Q.active) || (R && R.active))) ? "Offline – retrying" : full;     // short while the player needs the room
     $("status").title = full;
     if (typeof positionMini === "function") positionMini();
@@ -1141,6 +1168,7 @@
     var title = isTest ? "Adhan test" : name;
     var sub = isTest ? (name === "Fajr" ? "Fajr adhan" : "Main adhan") : "It is time for " + name + " · " + hhmm(new Date());
     if (!s) {
+      if (!isTest) diag("adhan unavailable", name + " (no sound configured)");
       showAlert(title, "No adhan sound is set. Open the Adhan settings to choose one.", "Close", "close");
       alertTimer = setTimeout(hideAlert, 60000);
       return;
@@ -1153,12 +1181,14 @@
       audio.src = s.url;
       var p = audio.play();
       if (p && p.then) {
-        p.then(function () { unlocked = true; updateChip(); }, function () {
+        p.then(function () { unlocked = true; if (!isTest) diag("adhan playing", name); updateChip(); }, function () {
+          if (!isTest) diag("adhan blocked", name + " (tap required)");
           // blocked (no tap since launch): ask for one
           showAlert(title, sub + " – tap to play", "▶ Play adhan", "play");
         });
       }
     } catch (e) {
+      if (!isTest) diag("adhan error", name);
       showAlert(title, "Couldn't play the sound", "Close", "close");
     }
   }
@@ -1169,6 +1199,7 @@
   });
   audio.addEventListener("error", function () {
     if (!$("alert").hidden && audio.src && audio.src !== silentUrl) {
+      diag("adhan audio error", $("aName").textContent);
       showAlert($("aName").textContent, "This sound file couldn't be played. Try a different file.", "Close", "close");
     }
   });
@@ -1195,6 +1226,7 @@
       if (fired[key]) return;
       fired[key] = 1;
       store("fired", fired);
+      diag("adhan attempted", p.name);
       playAdhan(p.name, false);
     });
   }
@@ -1255,6 +1287,7 @@
       h += '<button class="sw' + (nightMode === nm[0] ? " on" : "") + '" type="button" data-a="night" data-v="' + nm[0] + '">' + nm[1] + "</button>";
     });
     h += '</div><div class="note">Black screen: only a dim clock and the next prayer show, and the layout drifts slightly to protect the screen. Tap it to see everything for a minute.</div>';
+    h += '<div class="sec">System health</div>' + diagnosticsHTML();
     h += '<div class="sec">Sound</div>' +
       soundRow("main", "Adhan", "Plays for every enabled prayer") +
       soundRow("fajr", "Fajr adhan (optional)", "If empty, Fajr uses the main adhan") +
@@ -1309,6 +1342,8 @@
     } else if (a === "ntest") {
       nHandle({ id: "t" + Date.now(), time: Math.floor(Date.now() / 1000), topic: "preview", title: "Preview", message: "This is how a notification looks.", priority: 3, tags: ["bell"] }, true);
       closePanel();
+    } else if (a === "diagclear") {
+      diagLog = []; store("diaglog", diagLog); renderPanel();
     } else if (a === "dbg") {
       closePanel(); showDebug();
     } else if (a === "weekly") {
@@ -1697,6 +1732,8 @@
     if (!weekly || d.getSeconds() !== 0) return;
     if (Date.now() - pageStart < 7 * 24 * 3600 * 1000) return;
     if (!$("alert").hidden || !$("panel").hidden || prayerSoon(d, 15) || (R && R.active && R.want) || (Q && Q.playing)) return;
+    // Never sacrifice an enabled adhan to background maintenance.
+    if (unlocked && alertCount()) return;
     var i, isha = null, ok;
     for (i = 0; i < prayerEls.length; i++) if (prayerEls[i].name === "Isha" && prayerEls[i].time) isha = prayerEls[i].time;
     // evening, after Isha when people are likely awake to give the one tap that re-enables adhan sound
@@ -1928,7 +1965,7 @@
   }
   function qUI() {
     var b = $("qbtn"), m = $("qmini");
-    b.innerHTML = ICON.book; b.className = "qbtn" + (Q.active ? " on" : "");
+    b.innerHTML = ICON.badge; b.className = "qbtn" + (Q.active ? " on" : "");
     document.body.classList.toggle("qon", !!(Q.active || (R && R.active)));
     updateStatus();
     if (!Q.active || !window.QDATA) { m.hidden = true; document.body.classList.remove("qv"); positionMini(); qPanelLive(); return; }
@@ -2050,10 +2087,10 @@
   // ---------- Lofi radio: live internet streams (HTTPS only), plus your own stations ----------
   var RST = [
     { n: "Chillhop · Flux FM", s: "Chillhop", d: "Lofi hip-hop beats", u: "https://streams.fluxfm.de/Chillhop/mp3-128/streams.fluxfm.de/" },
-    { n: "Groove Salad · SomaFM", s: "Groove Salad", d: "Downtempo chill", u: "https://ice.somafm.com/groovesalad" },
-    { n: "Fluid · SomaFM", s: "Fluid", d: "Instrumental hip-hop", u: "https://ice.somafm.com/fluid" },
-    { n: "Lush · SomaFM", s: "Lush", d: "Mellow vocals", u: "https://ice.somafm.com/lush" },
-    { n: "Drone Zone · SomaFM", s: "Drone Zone", d: "Ambient, for sleep", u: "https://ice.somafm.com/dronezone" },
+    { n: "Groove Salad · SomaFM", s: "Groove Salad", d: "Downtempo chill", u: "https://ice1.somafm.com/groovesalad-128-mp3" },
+    { n: "Fluid · SomaFM", s: "Fluid", d: "Instrumental hip-hop", u: "https://ice1.somafm.com/fluid-128-mp3" },
+    { n: "Lush · SomaFM", s: "Lush", d: "Mellow vocals", u: "https://ice1.somafm.com/lush-128-mp3" },
+    { n: "Drone Zone · SomaFM", s: "Drone Zone", d: "Ambient, for sleep", u: "https://ice1.somafm.com/dronezone-128-mp3" },
     { n: "Code Radio", s: "Code Radio", d: "Beats to focus", u: "https://coderadio-admin-v2.freecodecamp.org/listen/coderadio/radio.mp3" },
     { n: "Radio Paradise Mellow", s: "Paradise Mellow", d: "Soft mix", u: "https://stream.radioparadise.com/mellow-128" },
     { n: "Chillsynth · Nightride FM", s: "Chillsynth", d: "Chill synthwave", u: "https://stream.nightride.fm/chillsynth.mp3" }
@@ -2252,10 +2289,13 @@
   loadSounds();
 
   renderClock();
-  var lastDay = new Date().getDate();
+  var lastDay = dmy(new Date()), lastClockTick = Date.now();
   var prayerJob;
   setInterval(function () {
     var d = new Date();
+    var jump = Date.now() - lastClockTick;
+    lastClockTick = Date.now();
+    if (jump > ADHAN_WINDOW_MS + 5000 || jump < -5000) diag("clock resume", "Time jump " + Math.round(jump / 1000) + "s; old prayer alerts will not auto-play");
     renderClock();
     applyTheme();
     checkAdhan(d);
@@ -2263,8 +2303,8 @@
     maybeWeekly(d);
     qTick();
     rTick();
-    if (d.getDate() !== lastDay) {          // new day: rebuild rows from cache, then refresh
-      lastDay = d.getDate();
+    if (dmy(d) !== lastDay) {          // new day: rebuild rows from cache, then refresh
+      lastDay = dmy(d);
       buildPrayer();
       if (prayerJob) prayerJob.run();
     }
