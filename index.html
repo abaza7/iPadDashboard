@@ -266,6 +266,11 @@
   .btn.ghost { background: transparent; border: 1px solid var(--btn-line); }
   .filebtn { position: relative; display: inline-block; overflow: hidden; cursor: pointer; }
   .filebtn .fin { position: absolute; left: 0; top: 0; width: 100%; height: 100%; opacity: 0; font-size: 100px; cursor: pointer; }
+  /* v16.2: align file actions even when one row has a Clear button. */
+  .srow.sound-row .sb { display: flex; align-items: center; justify-content: flex-end; gap: 1vmin; }
+  .srow.sound-row .sb .btn { margin-left: 0; display: inline-flex; align-items: center; justify-content: center; min-height: 6.6vmin; line-height: 1.2; white-space: nowrap; }
+  .srow.sound-row .filebtn { vertical-align: middle; }
+
   .btns { margin-top: 3vmin; display: flex; flex-wrap: wrap; }
   .btns .btn { margin: 0 1.4vmin 1.4vmin 0; }
   .note { margin-top: 2vmin; color: var(--dim); font-size: 2.3vmin; line-height: 1.4; }
@@ -354,6 +359,10 @@
   .qlist > div[hidden] { display: none; }
   .qlist .ar { font-size: 3.2vmin; }
   .qsearch { width: 100%; box-sizing: border-box; font: inherit; font-size: 2.6vmin; padding: 1.2vmin 2vmin; border-radius: 2vmin; border: 1px solid var(--btn-line); background: transparent; color: var(--fg); margin-bottom: 1vmin; }
+  /* v16.2: search occupies a dedicated row in both Quran columns. */
+  .qgrid .qsearch-spacer { height: 0; visibility: hidden; pointer-events: none; }
+  .qgrid .qsearch-spacer.qsearch { height: auto; }
+
   .qtog { display: flex; justify-content: space-between; align-items: center; padding: 1.2vmin 0; border-top: 1px solid var(--line); margin-top: 1vmin; }
   .qtog small { display: block; color: var(--dim); font-size: 2.2vmin; }
   .qread { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 15; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 9vmin 6vmin 21vmin; color: var(--fg); box-sizing: border-box; }
@@ -511,7 +520,7 @@
     nightTo:   parseInt(q.nightTo   || "6", 10)
   };
 
-  var BUILD = "2026-10-21.v16.1";           // bump on every release (used by the update check)
+  var BUILD = "2026-10-21.v16.2";           // bump on every release (used by the update check)
   var RETRY_MS = 5 * 60 * 1000;         // retry failed fetches every 5 minutes
   var ALERTABLE = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"];
   var PRAYER_NAMES = ["Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"];
@@ -1261,7 +1270,7 @@
   function soundRow(slot, label, hint) {
     var s = sounds[slot];
     var nm = s ? esc(s.name) + (s.src === "site" ? " (from the site)" : "") : "None";
-    return '<div class="srow"><div class="sl"><b>' + label + "</b><small>" + hint + "</small><em>" + nm + "</em></div>" +
+    return '<div class="srow sound-row"><div class="sl"><b>' + label + "</b><small>" + hint + "</small><em>" + nm + "</em></div>" +
       '<div class="sb"><label class="btn filebtn">Choose file<input type="file" class="fin" data-s="' + slot + '"></label>' +
       (s && s.src === "device" ? '<button class="btn ghost" type="button" data-a="clear" data-s="' + slot + '">Clear</button>' : "") +
       "</div></div>";
@@ -1313,7 +1322,7 @@
     BACKUP_KEYS.forEach(function (key) { var v = load(key); if (v !== null) out.settings[key] = v; });
     var blob = new Blob([JSON.stringify(out, null, 2)], { type: "application/json" });
     var url = URL.createObjectURL(blob); var a = document.createElement("a");
-    a.href = url; a.download = "ipad-dashboard-settings-v16.1.json"; document.body.appendChild(a); a.click();
+    a.href = url; a.download = "ipad-dashboard-settings-v16.2.json"; document.body.appendChild(a); a.click();
     document.body.removeChild(a); setTimeout(function () { URL.revokeObjectURL(url); }, 30000);
   }
   function importSettings(file) {
@@ -2080,7 +2089,7 @@
       '<div class="btns" style="margin:0 0 1vmin"><button class="btn pri" type="button" data-a="qread">Open reading view</button><button class="btn" type="button" data-a="qstop">■ Stop &amp; close player</button></div>' +
       '<div class="sec" style="margin-top:1vmin">Sleep timer</div><div class="pills">';
     [["0", "Off"], ["15", "15 min"], ["30", "30 min"], ["60", "60 min"], ["end", "End of surah"]].forEach(function (o) { h += '<button class="sw" type="button" data-a="qsleep" data-v="' + o[0] + '">' + o[1] + "</button>"; });
-    h += '</div><div class="qgrid"><div><div class="sec">Reciter</div><div class="qlist">';
+    h += '</div><div class="qgrid"><div><div class="sec">Reciter</div><input class="qsearch qsearch-spacer" aria-hidden="true" tabindex="-1" type="text" readonly><div class="qlist">';
     QREC.forEach(function (r, i) { h += '<div data-a="qrec" data-n="' + i + '">' + esc(r[0]) + "</div>"; });
     h += '</div></div><div><div class="sec">Surah</div><input class="qsearch" id="qfind" type="text" placeholder="Search by name or number" autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false"><div class="qlist" id="qlist">';
     QDATA.s.forEach(function (r, i) { h += '<div data-a="qsura" data-n="' + (i + 1) + '" data-k="' + esc((i + 1) + " " + r[1].toLowerCase() + " " + r[0]) + '"><span>' + (i + 1) + " · " + esc(r[1]) + '</span><span class="ar qa">' + esc(r[0]) + "</span></div>"; });

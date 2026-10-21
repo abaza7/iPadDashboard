@@ -267,3 +267,11 @@ The music-note button next to the Quran button opens the radio. It streams live 
 - The dashboard retains its static hosting and iPadOS 15-compatible browser code. HTTPS is required for Web Crypto on the phone and iPad.
 
 Limitations: relay acknowledgements are not authenticated; an attacker who learns the topic could forge a success message on the phone but cannot make the iPad execute an unsigned command. Browser limitations still prevent guaranteed scheduled audio while suspended, and in-browser file downloads may depend on Safari installation mode.
+
+## v16.2 — Layout fixes and stabilization
+
+- Fixed unequal vertical alignment of the Adhan “Choose file” and “Clear” buttons by using a shared flex action row with consistent button height.
+- Aligned Quran reciter list with the Surah list by reserving equal space for the Surah search field in the reciter column.
+- Updated build version, offline cache version, and settings export filename to 16.2.
+- Remote signing protocol remains v16.1 for backwards compatibility: existing v16.1 phone pairing does **not** need to change.
+- Static checks cover scripts, asset references, archive integrity and the two UI regressions. Real Safari on iPadOS 15 must still be tested on-device.
