@@ -633,3 +633,10 @@ Requires the appropriate Playwright/Python and Chromium dependencies. In previou
 - HTTP 429 rate limits introduce exponential backoff (and honor `Retry-After` seconds when provided).
 - Phone blocks overlapping sends and reports rate limiting separately from connectivity failures.
 - No new pairing needed. A stale heartbeat indicator may display briefly during background Safari suspension.
+
+## v19.3 — update check and remote reliability
+
+- **Update check fixed:** the "update ready" check now reads the build number from `js/dashboard/index.js` (it was looking in `index.html`, where it no longer exists). The service worker now fetches `.js`, `.css` and `.html` network-first, so a new version applies on the next open instead of one open later.
+- **Much less ntfy.sh traffic:** the iPad no longer posts a status message every time the Quran moves to the next verse (that could use up ntfy.sh's free ~250 messages/day within an hour). Status is sent when something meaningful changes (at most once a minute) and as a heartbeat every 15 minutes. The phone's badge reads "Online" up to ~16 minutes after the last status; opening the remote page or tapping refresh asks the iPad for a fresh one.
+- **Clock tolerance:** commands are accepted if the phone and iPad clocks differ by up to 10 minutes (was 90 s); if they differ more, Settings → Control from your phone says so.
+- **Clearer messages:** the iPad's remote status shows when ntfy.sh's limit is paused sending, and the phone explains when it was opened with an old pairing link that has no security key.

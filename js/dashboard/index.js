@@ -27,7 +27,7 @@
     nightTo:   parseInt(q.nightTo   || "6", 10)
   };
 
-  var BUILD = "2026-10-21.v19.2";           // bump on every release (used by the update check)
+  var BUILD = "2026-10-22.v19.3";           // bump on every release (used by the update check)
   var RETRY_MS = 5 * 60 * 1000;         // retry failed fetches every 5 minutes
   var ALERTABLE = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"];
   var PRAYER_NAMES = ["Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"];
@@ -955,7 +955,7 @@
   var updateReady = false, pageStart = Date.now();
   function checkUpdate() {
     if (navigator.onLine === false) return;
-    fetch("index.html?chk=" + Date.now(), { cache: "no-store" }).then(function (r) {
+    fetch("js/dashboard/index.js?chk=" + Date.now(), { cache: "no-store" }).then(function (r) {
       return r.ok ? r.text() : "";
     }).then(function (txt) {
       var m = /var BUILD = "([^"]+)"/.exec(txt || "");
@@ -1047,15 +1047,15 @@
     if (!remoteTopic || !remoteSecret || !crypto.subtle) return;
     // updated timestamp changes each call; compare semantic fields instead
     state.updated = 0;
-    if (state.quran) { state.quran.elapsed = 0; state.quran.duration = 0; }
+    if (state.quran) { state.quran.elapsed = 0; state.quran.duration = 0; state.quran.verse = 0; state.quran.loading = false; }
     var semantic = JSON.stringify(state); state.updated = Date.now();
     // Restore real playback timing in transmitted snapshot.
     if (state.quran) { state.quran.elapsed = Math.floor(qa.currentTime || 0); state.quran.duration = isFinite(qa.duration) ? Math.floor(qa.duration) : 0; }
-    // Only publish when meaningful data changes, or a sparse heartbeat every 2 minutes.
+    // Only publish when meaningful data changes, or a sparse heartbeat every 15 minutes (ntfy.sh free tier allows about 250 messages a day).
     // Progress/time changes are excluded to avoid hitting ntfy.sh free-tier quotas.
     if (Date.now() < relayBackoffUntil || statusBusy) return;
-    if (!force && semantic === lastPublished && Date.now() - lastStateSend < 120000) return;
-    if (!force && Date.now() - lastStateSend < 15000) return;
+    if (!force && semantic === lastPublished && Date.now() - lastStateSend < 900000) return;   // idle heartbeat every 15 min
+    if (!force && Date.now() - lastStateSend < 60000) return;                                  // at most one automatic update a minute
     statusBusy = true;
     var payload = "v17state|" + Date.now() + "|" + randomHex(16) + "|" + (++stateSequence) + "|" + encodeURIComponent(JSON.stringify(state));
     hmac(remoteSecret, payload).then(function (sig) { return remotePost(payload + "|" + sig); })
@@ -1085,14 +1085,15 @@
       doneIds.push(m.id); if (doneIds.length > 40) doneIds.shift(); store("doneids", doneIds);
       lastMsgId = m.id;
     }
-    if (m.time && Math.abs(Date.now() / 1000 - m.time) > 120) return;      // ignore anything old
+    if (m.time && Math.abs(Date.now() / 1000 - m.time) > 600) return;      // ignore anything old (generous: iPad clocks drift)
     var txt = String(m.message);
     if (selfTest && txt === "selftest " + selfTest.id) { selfTest.ok = true; return; }
     if (/^ack/i.test(txt) || /^selftest /.test(txt) || txt.indexOf("v17state|") === 0) return;
     if (txt.indexOf("v16.1|") !== 0 || !remoteSecret || !crypto.subtle) { remoteErr = "Unsigned command rejected"; setRState(); return; }
     var parts = txt.split("|");
     if (parts.length !== 5 || !/^\d{13}$/.test(parts[1]) || !/^[a-f0-9]{32}$/.test(parts[2]) || !/^[a-f0-9]{64}$/.test(parts[4]) ||
-        Math.abs(Date.now() - +parts[1]) > 90000 || commandNonces.indexOf(parts[2]) >= 0) return;
+        commandNonces.indexOf(parts[2]) >= 0) return;
+    if (Math.abs(Date.now() - +parts[1]) > 600000) { remoteErr = "Command ignored: the phone and iPad clocks differ by about " + Math.round(Math.abs(Date.now() - +parts[1]) / 60000) + " min"; setRState(); return; }
     var message = parts.slice(0, 4).join("|");
     hmac(remoteSecret, message).then(function (signature) {
       if (signature !== parts[4] || commandNonces.indexOf(parts[2]) >= 0) return;
@@ -1165,6 +1166,7 @@
     var t = remoteState === "on" ? "Connected" : (remoteState === "retry" ? "Reconnecting…" : (remoteState === "connecting" ? "Connecting…" : "Off"));
     if (remoteLast) t += " · last command " + remoteLast;
     if (remoteErr) t += " · " + remoteErr;
+    if (Date.now() < relayBackoffUntil) t += " · ntfy.sh limit reached, sending paused for " + Math.max(1, Math.ceil((relayBackoffUntil - Date.now()) / 60000)) + " min";
     return t;
   }
   function setRState() { var e = $("rstate"); if (e) e.textContent = remoteLabel(); }

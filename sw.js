@@ -3,7 +3,7 @@
 // - Everything else on this site (adhan sound files): cached copy first, refreshed in the background.
 // Data from the weather / prayer / exchange-rate APIs is not handled here (the page caches that itself).
 
-var CACHE = "ipad-dashboard-v19.2";
+var CACHE = "ipad-dashboard-v19.3";
 var CORE = ["./", "./index.html", "./fonts/Fraunces.woff2", "./fonts/Fraunces-Italic.woff2", "./fonts/Jost.woff2", "./fonts/AmiriQuran.woff2", "./quran-data.js", "./css/index.css", "./css/remote.css", "./js/core/shared.js", "./js/core/storage.js", "./js/core/catalog.js", "./js/core/ui.js", "./js/core/network.js", "./js/core/state.js", "./js/core/media-controller.js", "./js/core/status-projection.js", "./js/core/components.js", "./js/core/diagnostics.js", "./js/dashboard/index.js", "./js/core/remote-storage.js", "./js/remote/remote.js", "./remote.html"];
 var OPTIONAL = ["./adhan.mp3", "./adhan-fajr.mp3"];   // fine if these don't exist
 
@@ -68,6 +68,6 @@ self.addEventListener("fetch", function (e) {
   if (url.origin !== self.location.origin) return;      // leave API calls alone
   if (req.headers.get("range")) return;                 // let the browser handle range requests itself
 
-  var isPage = req.mode === "navigate" || /\.html?$/.test(url.pathname) || url.pathname.slice(-1) === "/";
+  var isPage = req.mode === "navigate" || /\.(html?|js|css|webmanifest)$/.test(url.pathname) || url.pathname.slice(-1) === "/";
   e.respondWith(isPage ? networkFirst(req, 4000) : staleWhileRevalidate(req));
 });

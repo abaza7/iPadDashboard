@@ -27,7 +27,7 @@
   var liveState = null, liveSeen = 0, liveSequence = -1, liveMessageIds = {}, liveBoot = "", ackAt = 0, commandAt = 0;
   function updateLive() {
     var age = liveSeen ? Math.round((Date.now() - liveSeen) / 1000) : -1;
-    $("liveBadge").textContent = age < 0 ? "Waiting…" : age < 150 ? "● Online" : age < 270 ? "● Stale" : "● No recent heartbeat";
+    $("liveBadge").textContent = age < 0 ? "Waiting…" : age < 1000 ? "● Online" : age < 1800 ? "● Stale" : "● No recent status";
     if (!liveState) return;
     var st = liveState, q = st.quran || {}, r = st.radio || {};
     $("liveMeta").textContent = "Theme: " + (st.theme || "—") + " · Screen: " + (st.screen || "—") + " · " + (st.version || "") + " · Audio: " + (st.audioReady ? "ready" : "needs tap");
@@ -53,12 +53,12 @@
     if (!m || !m.message || m.message.indexOf("v17state|") !== 0 || !secret) return;
     if (m.id && liveMessageIds[m.id]) return;
     var p = m.message.split("|");
-    if (p.length !== 6 || !/^\d{13}$/.test(p[1]) || !/^[a-f0-9]{32}$/.test(p[2]) || !/^[a-f0-9]{64}$/.test(p[5]) || Math.abs(Date.now()-Number(p[1])) > 120000) return;
+    if (p.length !== 6 || !/^\d{13}$/.test(p[1]) || !/^[a-f0-9]{32}$/.test(p[2]) || !/^[a-f0-9]{64}$/.test(p[5]) || Math.abs(Date.now()-Number(p[1])) > 600000) return;
     var message = p.slice(0, 5).join("|");
     hmac(secret, message).then(function (signature) {
       if (signature !== p[5] || (m.id && liveMessageIds[m.id])) return;
       var state; try { state = JSON.parse(decodeURIComponent(p[4])); } catch (e) { return; }
-      if (!state || Math.abs(Date.now()-state.updated) > 120000) return;
+      if (!state || Math.abs(Date.now()-state.updated) > 600000) return;
       if (liveState && state.updated < liveState.updated) return;
       if (m.id) { liveMessageIds[m.id] = true; if (Object.keys(liveMessageIds).length > 100) liveMessageIds = {}; }
       liveState = state; liveSeen = Date.now(); updateLive();
@@ -156,6 +156,7 @@
       if (isApp) { try { history.replaceState(null, "", location.pathname); } catch (e) {} }
     }
     $("appHelp").hidden = isApp;
+    if (location.hash && !match && !$("oldcode")) { var oc = document.createElement("div"); oc.id = "oldcode"; oc.className = "err"; oc.style.cssText = "margin:10px 0;padding:10px;border-radius:12px;background:rgba(200,60,40,.2)"; oc.textContent = "This link is an old pairing code without the security key. On the iPad open Settings → Control from your phone and copy the new link."; $("setup").insertBefore(oc, $("setup").firstChild); }
     var has = !!topic;
     $("setup").hidden = has; $("main").hidden = !has;
     $("where").textContent = has ? "Connected to code " + topic.slice(0, 4) + "-…" : "";

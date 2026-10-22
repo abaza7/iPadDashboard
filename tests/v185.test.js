@@ -11,5 +11,5 @@ const shell=fs.readFileSync(path.join(root,"src/dashboard/shell-before.js"),"utf
 assert(shell.includes('var row = DashboardComponents.settingsRow;'));
 assert(shell.indexOf('syncApplicationProjection(state);') < shell.indexOf('if (!remoteTopic || !remoteSecret || !crypto.subtle) return;',shell.indexOf('function publishDashboardState(force)')));
 assert(shell.includes('setInterval(function () { publishDashboardState(false); }, 30000);'));
-const sw=fs.readFileSync(path.join(root,"sw.js"),"utf8");assert(sw.includes('ipad-dashboard-v19.2'));
+const sw=fs.readFileSync(path.join(root,"sw.js"),"utf8");assert(sw.includes('ipad-dashboard-v19.3'));
 console.log("PASS: v18.7 health UI escaping, local state sync, and cache revision");
