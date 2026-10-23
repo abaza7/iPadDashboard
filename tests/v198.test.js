@@ -1,0 +1,11 @@
+'use strict';
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const src=fs.readFileSync('src/dashboard/shell-before.js','utf8');
+assert(src.includes('https://api.exchangerate.dev/v1/latest/'));
+assert(src.includes('j.effective_at') && src.includes('j.stale') && src.includes('market_session'));
+assert(src.includes('6 * 3600000') && src.includes('fx_last_attempt'));
+assert(src.includes('fetchGoldReference') && src.includes('goldSource'));
+assert(!src.includes('open.er-api.com/v6/latest/'));
+assert(src.includes('openFinanceDetails'));
+console.log('PASS: exchangerate.dev FX quote validation, persisted throttle, independent daily gold reference');

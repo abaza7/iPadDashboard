@@ -659,3 +659,8 @@ Requires the appropriate Playwright/Python and Chromium dependencies. In previou
 - Azkar uses an outlined sunrise SVG rather than an emoji.
 - Settings includes a manual Reload button with confirmation while media is active. Reload can require tapping iPad again to unlock audio.
 - No changes to radio presets, existing pairing, FX frequency, or visual layout outside the requested controls.
+
+
+## v19.8 — USD/EGP provider update
+
+USD/EGP now comes from exchangerate.dev `GET /v1/latest/{base}?symbols={quote}`. The endpoint is anonymous, so no API key is embedded in this public static dashboard. Requests are capped at one every six hours, persisted in local storage, including failures. Each quote is validated against its per-currency `effective_at` observation time, `stale`, and market-session data. Old cached rates remain visible as stale rather than being relabeled current. The finance details overlay shows source and observation timestamp. Gold conversion continues to use a separate daily currency cross; failed gold fetches never cause an old USD/EGP rate to overwrite the newer quote. External API reachability and iPadOS Safari CORS still require on-device verification. The API provides indicative rates rather than bank execution prices.

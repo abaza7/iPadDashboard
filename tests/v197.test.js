@@ -13,5 +13,5 @@ assert(az.includes('raw.githubusercontent.com/SalehGNUTUX/GT_HISNMUSLIM'));
 assert(az.includes('items[position].audio')&&az.includes('selected()'));
 assert(az.includes('Mishary Alafasy')&&az.includes('Fares Abbad')&&az.includes('Muhammad Jibril'));
 assert(az.includes('isPlaying:function(){return playing;}'));
-assert(read('sw.js').includes('ipad-dashboard-v19.7'));
+assert(read('sw.js').includes('ipad-dashboard-v19.8'));
 console.log('PASS: v19.7 finance modal, manual reload, source-grounded Azkar choices and SVG icon');

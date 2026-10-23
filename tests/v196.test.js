@@ -5,7 +5,7 @@ assert(src.includes('fxFresh') && src.includes('STALE'));
 assert(src.includes('window.DashboardTodayFajr'));
 assert(src.includes('c === "azkar"'));
 assert(html.includes('id="azbtn"') && html.includes('js/azkar.js'));
-assert(sw.includes('js/azkar.js') && sw.includes('ipad-dashboard-v19.7'));
+assert(sw.includes('js/azkar.js') && sw.includes('ipad-dashboard-v19.8'));
 assert(az.includes('SpeechSynthesisUtterance') && az.includes('state.cues') && az.includes('dash_azkar_schedule'));
 for(const cmd of ['azkar play','azkar pause','azkar stop','azkar open'])assert(remote.includes(cmd));
 assert(!read('js/core/catalog.js').includes('somafm.com'));

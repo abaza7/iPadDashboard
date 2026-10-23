@@ -12,6 +12,6 @@ store.set({playing:true});assert.equal(selected,1);off();store.set({playing:fals
 store.subscribe(()=>{throw Error("broken consumer")});store.set({verse:3});assert.equal(store.get().verse,3);
 const remote=ctx.window.DashboardRemoteStorage;assert.equal(remote.get("remote_topic"),"abc");assert.equal(remote.put("remote_topic","updated"),true);assert.equal(remote.get("remote_topic"),"updated");
 const diag=ctx.window.DashboardDiagnostics.create(2);diag.add("network","stale");diag.add("audio","blocked");diag.add("remote","offline");assert.equal(diag.count(),2);
-const html=fs.readFileSync(path.join(root,"remote.html"),"utf8"),sw=fs.readFileSync(path.join(root,"sw.js"),"utf8");assert(html.includes("js/core/remote-storage.js"));assert(sw.includes("js/core/remote-storage.js"));assert(sw.includes("ipad-dashboard-v19.7"));
+const html=fs.readFileSync(path.join(root,"remote.html"),"utf8"),sw=fs.readFileSync(path.join(root,"sw.js"),"utf8");assert(html.includes("js/core/remote-storage.js"));assert(sw.includes("js/core/remote-storage.js"));assert(sw.includes("ipad-dashboard-v19.8"));
 const before=fs.readFileSync(path.join(root,"src/dashboard/shell-before.js"),"utf8");assert(before.includes("var qm = DashboardMediaController.normalize(Q)"));assert(before.includes("var rm = DashboardMediaController.normalize(R)"));
 console.log("PASS: v19 state isolation, selectors, failures, storage compatibility, diagnostics and assets");

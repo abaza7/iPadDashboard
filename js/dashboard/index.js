@@ -27,7 +27,7 @@
     nightTo:   parseInt(q.nightTo   || "6", 10)
   };
 
-  var BUILD = "2026-10-23.v19.7";           // bump on every release (used by the update check)
+  var BUILD = "2026-10-23.v19.8";           // bump on every release (used by the update check)
   var RETRY_MS = 5 * 60 * 1000;         // retry failed fetches every 5 minutes
   var ALERTABLE = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"];
   var PRAYER_NAMES = ["Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"];
@@ -293,7 +293,7 @@
     });
   }
 
-  // ---------- exchange rate (free, no key; daily reference rate) ----------
+  // ---------- exchange rate (exchangerate.dev; conservative six-hour polling) ----------
   function fmtInt(n) { return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ","); }
   var OZ_G = 31.1034768;   // grams in a troy ounce
 
@@ -303,8 +303,11 @@
   }
   function fxFresh(fx) {
     if (!fx || !(fx.rate > 0)) return false;
-    var age = Date.now() - rateDateMs(fx.date);
-    return isFinite(age) && age >= -86400000 && age < 72 * 3600000;
+    var observed = fx.effectiveAt ? Date.parse(fx.effectiveAt) : rateDateMs(fx.date);
+    var age = Date.now() - observed;
+    // Markets close at weekends. Never present an old quote as a fresh intraday observation.
+    var maxAge = fx.marketSession === "weekend" || fx.marketSession === "interbank_closed" ? 96 * 3600000 : 8 * 3600000;
+    return isFinite(age) && age >= -300000 && age < maxAge && fx.providerStale !== true;
   }
   function renderFX(fx) {
     var el = $("fx");
@@ -335,11 +338,13 @@
     var fresh = fxFresh(fx), value = type === "gold" ?
       (fx.oz > 0 ? "21k " + fmtInt(fx.oz / OZ_G * 21 / 24) + " · 24k " + fmtInt(fx.oz / OZ_G) : "Not available") :
       fx.rate.toFixed(2) + " " + fx.to;
-    var rows = [["Value", value], ["Freshness", fresh ? "Fresh (daily reference)" : "STALE — cached rate"],
-      ["Provider", fx.source || "Unknown"], ["Rate date", fx.date || "Not provided"],
+    var rows = [["Value", value], ["Freshness", fresh ? "Recent indicative quote" : "STALE — cached rate"],
+      ["Provider", fx.source || "Unknown"], ["Observed at", fx.effectiveAt || fx.date || "Not provided"],
+      ["Market", fx.marketSession || "Not reported"], ["Gold reference", fx.goldSource || "Separate daily reference"],
       ["Last checked", load("fx_last_attempt") ? new Date(+load("fx_last_attempt")).toLocaleString() : "Not recorded"],
       ["Update frequency", "At most once every 6 hours"]];
-    body.innerHTML = rows.map(function(r){return '<div class="fx-modal-detail"><span>'+esc(r[0])+'</span><b>'+esc(String(r[1]))+'</b></div>';}).join("");
+    body.innerHTML = rows.map(function(r){return '<div class="fx-modal-detail"><span>'+esc(r[0])+'</span><b>'+esc(String(r[1]))+'</b></div>';}).join("") +
+      '<div class="fx-modal-detail"><span>Rate attribution</span><a href="https://exchangerate.dev" target="_blank" rel="noopener noreferrer">exchangerate.dev ↗</a></div>';
     dialog.hidden=false;
     $("fx-modal-close").focus();
   }
@@ -353,40 +358,56 @@
   document.addEventListener("keydown",function(e){if(e.key==="Escape"&&!$("fx-modal").hidden)$("fx-modal").hidden=true;});
   function fetchFX() {
     if (!CFG.fx) return Promise.resolve();
-    var f = CFG.from.toLowerCase(), t = CFG.to.toLowerCase();
     var last = load("fx");
-    // Never fetch faster than every 6 hours, even after reloads or network reconnects.
+    var now = Date.now();
+    // Retain the six-hour persisted throttle across reloads, even on failures.
     var lastAttempt = +(load("fx_last_attempt") || 0);
-    if (Date.now() - lastAttempt < 6 * 3600000) return Promise.resolve();
-    store("fx_last_attempt", Date.now());
-    var jsd = "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@";
-    function pick(j, source) {
-      var rate = j && j[f] && j[f][t];
-      if (typeof rate !== "number" || !(rate > 0)) throw new Error("bad rate");
-      var xau = j[f].xau;
-      return {rate:rate, date:j.date, source:source, oz:(xau > 0 ? rate / xau : 0)};
+    if (now - lastAttempt < 6 * 3600000 && now >= lastAttempt) return Promise.resolve();
+    store("fx_last_attempt", now);
+    var url = "https://api.exchangerate.dev/v1/latest/" + encodeURIComponent(CFG.from.toUpperCase()) +
+      "?symbols=" + encodeURIComponent(CFG.to.toUpperCase());
+    function parseQuote(j) {
+      var symbol = CFG.to.toUpperCase();
+      var quote = j && j.rates && j.rates[symbol];
+      var stamp = j && j.effective_at && j.effective_at[symbol];
+      var observed = Date.parse(stamp);
+      if (!j || j.result !== "success" || j.base !== CFG.from.toUpperCase() ||
+          typeof quote !== "number" || !(quote > 0) || !isFinite(quote) ||
+          !stamp || !isFinite(observed) || observed > Date.now() + 300000) {
+        throw new Error("invalid FX quote or timestamp");
+      }
+      var cur = {from:CFG.from,to:CFG.to,rate:quote,
+        date:new Date(observed).toISOString().slice(0,10),effectiveAt:stamp,
+        marketSession:j.market_session || "unknown",
+        providerStale: !!(j.stale && j.stale[symbol]),
+        source:"exchangerate.dev",oz:0};
+      if (!fxFresh(cur)) throw new Error("stale intraday quote");
+      return cur;
     }
-    function valid(cur) { if (!fxFresh(cur)) throw new Error("outdated FX source"); return cur; }
-    function latest() {
-      return getJSON(jsd + "latest/v1/currencies/" + f + ".json").then(function(j) { return valid(pick(j,"jsDelivr daily")); })
-      .catch(function() { return getJSON("https://latest.currency-api.pages.dev/v1/currencies/" + f + ".json").then(function(j) {return valid(pick(j,"currency-api daily"));}); })
-      .catch(function() { return getJSON("https://open.er-api.com/v6/latest/" + CFG.from).then(function(j) {
-        var rate = j && j.rates && j.rates[CFG.to];
-        if (!(rate > 0) || !j.time_last_update_utc) throw new Error("bad rate or update time");
-        var ts = Date.parse(j.time_last_update_utc);
-        if (!isFinite(ts)) throw new Error("bad source time");
-        var date = new Date(ts).toISOString().slice(0,10);
-        return valid({rate:rate,date:date,source:"open.er-api",oz:j.rates.XAU > 0 ? rate/j.rates.XAU : 0});
-      }); });
+    // Gold is separate: exchangerate.dev does not guarantee XAU coverage.
+    // The daily feed is used only for metal conversion, never as an FX fallback.
+    function fetchGoldReference() {
+      return getJSON("https://latest.currency-api.pages.dev/v1/currencies/" + CFG.from.toLowerCase() + ".json")
+      .then(function(j) {
+        var row = j && j[CFG.from.toLowerCase()];
+        var xau = row && row.xau, egp = row && row[CFG.to.toLowerCase()];
+        if (!(xau > 0) || !(egp > 0) || !rateDateMs(j.date) ||
+            Date.now() - rateDateMs(j.date) > 72 * 3600000) throw new Error("stale gold reference");
+        // One XAU in EGP, computed from the same daily currency snapshot.
+        return {oz:egp / xau, goldSource:"currency-api daily (XAU cross)",goldDate:j.date};
+      }).catch(function(){
+        return last && last.oz > 0 ? {oz:last.oz,goldSource:last.goldSource || "Cached gold reference",goldDate:last.goldDate || last.date} : {oz:0};
+      });
     }
-    return latest().then(function(cur) {
-      // Previous-day lookup only once per accepted snapshot; no extra fetch on a stale response.
-      cur.from = CFG.from; cur.to = CFG.to;
-      if (last && last.date !== cur.date && last.rate > 0) {cur.prev=last.rate;cur.ozPrev=last.oz;}
-      store("fx",cur);renderFX(cur);
+    return getJSON(url).then(parseQuote).then(function(cur) {
+      return (CFG.gold ? fetchGoldReference() : Promise.resolve({oz:0})).then(function(gold){
+        cur.oz=gold.oz;cur.goldSource=gold.goldSource;cur.goldDate=gold.goldDate;
+        if(last && last.rate > 0 && last.effectiveAt !== cur.effectiveAt)cur.prev=last.rate;
+        store("fx",cur);renderFX(cur);
+      });
     }).catch(function(err) {
       if (last) renderFX(last);
-      if (typeof logDiag === "function") logDiag("fx", "source unavailable or stale");
+      if (typeof logDiag === "function") logDiag("fx", "exchangerate.dev unavailable or stale: " + String(err && err.message || err));
     });
   }
 
