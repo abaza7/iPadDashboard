@@ -15,5 +15,5 @@ state=media.transition(state,{type:"POSITION",value:55});assert.equal(state.posi
 state=media.transition(state,{type:"STOP"});assert.equal(state.active,false);assert.equal(state.position,0);
 state=media.transition(state,{type:"ERROR",message:"network"});assert.equal(state.error,"network");
 assert.throws(()=>media.transition(state,{type:"UNKNOWN"}));
-assert(fs.readFileSync(path.join(root,"sw.js"),"utf8").includes("ipad-dashboard-v19.3"));
+assert(fs.readFileSync(path.join(root,"sw.js"),"utf8").includes("ipad-dashboard-v19.6"));
 console.log("PASS: v18.7 state changes, unsubscribe, media lifecycle, cache");

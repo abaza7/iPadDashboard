@@ -112,6 +112,7 @@
     qUI();
   }
   function qPlay() {
+    if (window.DashboardAzkar && window.DashboardAzkar.isPlaying()) window.DashboardAzkar.stop();
     if (R && R.active) rStop();
     qLoadData(function () {
       Q.active = true;

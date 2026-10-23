@@ -19,7 +19,7 @@ for (const name of ['index.html','remote.html']) {
 for (const f of ['js/core/shared.js','js/core/catalog.js','js/core/ui.js','js/core/network.js','js/core/state.js','js/core/media-controller.js','js/core/components.js','js/core/diagnostics.js','js/dashboard/index.js','js/remote/remote.js','sw.js']) new vm.Script(read(f), { filename:f });
 const sw = read('sw.js');
 for(const f of ['./css/index.css','./css/remote.css','./js/core/shared.js','./js/core/catalog.js','./js/core/ui.js','./js/core/network.js','./js/core/state.js','./js/core/media-controller.js','./js/core/components.js','./js/core/diagnostics.js','./js/dashboard/index.js','./js/remote/remote.js']) assert(sw.includes(`"${f}"`),`Cache missing ${f}`);
-assert(sw.includes('ipad-dashboard-v19.3'));
+assert(sw.includes('ipad-dashboard-v19.6'));
 const data = {};
 const storage = { getItem:k => data[k] ?? null, setItem:(k,v)=>{data[k]=v;} };
 const context={window:{localStorage:storage,crypto:{getRandomValues: a=>crypto.randomFillSync(a),subtle:crypto.webcrypto.subtle}},crypto:crypto.webcrypto,TextEncoder,Promise,Uint8Array};
@@ -42,6 +42,8 @@ await assert.rejects(s.hmac('broken','abc'));
 const dash=read('js/dashboard/index.js');const remote=read('js/remote/remote.js');
 assert(dash.includes('v17state|') && remote.includes('v17state|'));
 assert(dash.includes('function qStop()') && remote.includes('liveStop'));
-assert(read('js/core/catalog.js').includes('ice5.somafm.com'));
+assert(!read('js/core/catalog.js').includes('somafm.com'));
+assert(read('js/core/catalog.js').includes('channels.fluxfm.de/chillout-radio'));
+assert(!read('remote.html').includes('SomaFM'));
 console.log('PASS: assets, script order, JS syntax, shared crypto, storage, radio, Quran, offline manifest');
 })().catch(e=>{console.error(e);process.exitCode=1});

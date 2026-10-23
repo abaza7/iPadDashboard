@@ -38,7 +38,7 @@ The iPad Dashboard is an always-visible home information and media interface. It
 - Prayer schedule with next-prayer indication and configurable adhan playback.
 - Optional currency exchange-rate and derived gold-per-gram display.
 - Quran Arabic text bundled locally; multiple reciters and verse-navigation controls.
-- Lofi/ambient/internet radio with presets, custom HTTPS stations, and SomaFM fallback servers.
+- Lofi/ambient/internet radio with presets, custom HTTPS stations, and FluxFM fallback servers.
 - Shared audio coordination: Quran/radio interrupted by adhan and resumed when applicable.
 - Night screen, auto day/night theme, optional gentle position drift.
 - ntfy-powered notification banners and remotely signed control commands.
@@ -123,7 +123,7 @@ Open via the radio button on the main dashboard or on the phone remote.
 - Add custom stations by supplying a name and an **HTTPS** stream URL.
 - Sleep timers, including 30, 60, and 90 minutes from the remote.
 - Adhan-aware interruption and restoration as supported by the player.
-- On supported SomaFM presets, tries a configured alternative server when the primary stream fails.
+- On supported FluxFM presets, tries a configured alternative server when the primary stream fails.
 - Companion remote now-playing information and unified controls.
 
 ### Built-in stations (v19.0)
@@ -131,10 +131,10 @@ Open via the radio button on the main dashboard or on the phone remote.
 | Station | Primary stream | Alternate |
 |---|---|---|
 | Chillhop · Flux FM | `https://streams.fluxfm.de/Chillhop/mp3-128/streams.fluxfm.de/` | — |
-| Groove Salad · SomaFM | `https://ice5.somafm.com/groovesalad-128-mp3` | `https://ice6.somafm.com/groovesalad-128-mp3` |
-| Fluid · SomaFM | `https://ice5.somafm.com/fluid-128-mp3` | `https://ice2.somafm.com/fluid-128-mp3` |
-| Lush · SomaFM | `https://ice5.somafm.com/lush-128-mp3` | `https://ice6.somafm.com/lush-128-mp3` |
-| Drone Zone · SomaFM | `https://ice5.somafm.com/dronezone-128-mp3` | `https://ice2.somafm.com/dronezone-128-mp3` |
+| Chillout Radio · Flux FM | `https://channels.fluxfm.de/chillout-radio/externalembedflxhp/stream.mp3` | — |
+| Electronic Chillout · Flux FM | `https://channels.fluxfm.de/electronic-chillout/externalembedflxhp/stream.mp3` | — |
+| Yoga Sounds · Flux FM | `https://channels.fluxfm.de/externalembedflxhp/yoga-sounds/stream.mp3` | — |
+| Cosmic Jazz · Flux FM | `https://streams.fluxfm.de/Cosmic/mp3-128/streams.fluxfm.de/` | — |
 | Code Radio | `https://coderadio-admin-v2.freecodecamp.org/listen/coderadio/radio.mp3` | — |
 | Radio Paradise Mellow | `https://stream.radioparadise.com/mellow-128` | — |
 | Chillsynth · Nightride FM | `https://stream.nightride.fm/chillsynth.mp3` | — |
@@ -488,7 +488,7 @@ iPadDashboard/
 | Prayer-time provider API | Daily prayer timings according to selected method/location |
 | Exchange-rate and gold data providers | Finance indicators |
 | EveryAyah / Islam Sobhi audio source | Quran recitations |
-| SomaFM and other radio hosts | Internet radio playback |
+| FluxFM and other radio hosts | Internet radio playback |
 | `ntfy.sh` | Phone remote command/status relay; notification subscriptions |
 
 These providers are independently operated and may have downtime, rate limits, changes in content, or URL deprecations. Review the source when updating provider contracts.
@@ -541,7 +541,7 @@ Requires the appropriate Playwright/Python and Chromium dependencies. In previou
 - [ ] Prayer timetable matches expected location/method/time zone.
 - [ ] Adhan sound upload, playback test, scheduled event, and Fajr override work.
 - [ ] Quran loads text, plays, pauses, advances, changes reciter, and Stop closes mini-player.
-- [ ] Radio presets play; SomaFM primary-to-backup fallback functions; custom stream works.
+- [ ] Radio presets play; FluxFM primary-to-backup fallback functions; custom stream works.
 - [ ] Adhan interruption and subsequent media resume behave correctly.
 - [ ] Phone remote pairing, status refresh, authenticated command delivery, and invalid-command rejection work.
 - [ ] All themes and black/dim/off night modes render correctly.
@@ -617,7 +617,7 @@ Requires the appropriate Playwright/Python and Chromium dependencies. In previou
 | v16.0 | Diagnostics, network recovery, safer adhan/update handling |
 | v16.1 | Quran Stop and book icon, signed remote commands, settings backup/import |
 | v16.2 | Adhan file-picker and Quran selection-list alignment fixes |
-| v17.0 | SomaFM stream/fallback updates and remote live status/Now Playing |
+| v17.0 | FluxFM stream/fallback updates and remote live status/Now Playing |
 | v18.0–18.3 | CSS/JS separation, shared libraries, split media source, build tools/tests |
 | v18.4–18.8 | Shared state and diagnostic projection, UI utility refinements, testing harness |
 | v18.9 | Storage gateway and reusable settings improvements |
@@ -634,9 +634,19 @@ Requires the appropriate Playwright/Python and Chromium dependencies. In previou
 - Phone blocks overlapping sends and reports rate limiting separately from connectivity failures.
 - No new pairing needed. A stale heartbeat indicator may display briefly during background Safari suspension.
 
-## v19.3 — update check and remote reliability
+## v19.4 — update check and remote reliability
 
 - **Update check fixed:** the "update ready" check now reads the build number from `js/dashboard/index.js` (it was looking in `index.html`, where it no longer exists). The service worker now fetches `.js`, `.css` and `.html` network-first, so a new version applies on the next open instead of one open later.
 - **Much less ntfy.sh traffic:** the iPad no longer posts a status message every time the Quran moves to the next verse (that could use up ntfy.sh's free ~250 messages/day within an hour). Status is sent when something meaningful changes (at most once a minute) and as a heartbeat every 15 minutes. The phone's badge reads "Online" up to ~16 minutes after the last status; opening the remote page or tapping refresh asks the iPad for a fresh one.
 - **Clock tolerance:** commands are accepted if the phone and iPad clocks differ by up to 10 minutes (was 90 s); if they differ more, Settings → Control from your phone says so.
 - **Clearer messages:** the iPad's remote status shows when ntfy.sh's limit is paused sending, and the phone explains when it was opened with an old pairing link that has no security key.
+
+
+## v19.6 – FX, Radio and Morning Azkar
+- v19.4 FluxFM alternatives replace all built-in SomaFM entries. Your custom stations remain.
+- FX provider fetch attempts are capped to one attempt per six hours **across page reloads**, including failed attempts. A daily rate dated more than 72 hours ago is rejected; cached values are clearly labeled `STALE`. Gold from a cached FX snapshot is also marked stale. A manual dashboard data refresh does not override this six-hour cap. These are daily/reference feeds, **not live interbank FX quotes**.
+- Tap the ☀ corner button for **Morning Azkar**. Built-in Arabic device speech speaks one displayed dhikr at a time and highlights the current section. Arabic speech availability and pronunciation depend on the iPad's installed voices; it is not a recorded reciter.
+- Optional: upload an MP3; text stays readable. For **accurate timed highlighting of uploaded audio**, upload a JSON array with exactly one `{"start":0,"end":12.3}` object for each of the eight displayed sections, with strictly increasing, non-overlapping times in seconds. Without cues no synchronization is claimed. Recordings and cue files are session-only (not retained after reload).
+- Optional checkbox schedules Azkar 10 minutes after Fajr, based on current dashboard prayer data. This is **best-effort only** while the dashboard is awake; iPadOS will not guarantee unattended audio.
+- Phone remote adds `azkar play`, `azkar pause`, `azkar stop`, `azkar open` using the existing authenticated protocol and ntfy traffic limits.
+- Quran, radio and adhan are not mixed with Azkar playback.

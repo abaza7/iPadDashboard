@@ -1,0 +1,12 @@
+'use strict';const fs=require('fs'),assert=require('assert'),path=require('path');const root=path.join(__dirname,'..');const read=f=>fs.readFileSync(path.join(root,f),'utf8');
+const src=read('src/dashboard/shell-before.js'),az=read('js/azkar.js'),html=read('index.html'),remote=read('remote.html'),sw=read('sw.js');
+assert(src.includes('fx_last_attempt') && src.includes('6 * 3600000'));
+assert(src.includes('fxFresh') && src.includes('STALE'));
+assert(src.includes('window.DashboardTodayFajr'));
+assert(src.includes('c === "azkar"'));
+assert(html.includes('id="azbtn"') && html.includes('js/azkar.js'));
+assert(sw.includes('js/azkar.js') && sw.includes('ipad-dashboard-v19.6'));
+assert(az.includes('SpeechSynthesisUtterance') && az.includes('state.cues') && az.includes('dash_azkar_schedule'));
+for(const cmd of ['azkar play','azkar pause','azkar stop','azkar open'])assert(remote.includes(cmd));
+assert(!read('js/core/catalog.js').includes('somafm.com'));
+console.log('PASS: v19.6 FX safety, Azkar reader, radio catalog, remote, offline assets');

@@ -7,7 +7,7 @@ assert.equal(ui.escapeHTML('<>&"\''),'&lt;&gt;&amp;&quot;&#39;');
 assert.equal(ui.dmy(new Date(2026,0,5)),'05-01-2026');
 assert.equal(ui.friendlyAge(1000,61000),'1m ago');
 assert(cat.reciters.length>=10 && cat.stations.length>=8);
-assert(cat.stations.some(x=>x.s==='Groove Salad' && x.alt));
+assert(cat.stations.some(x=>x.s==='Chillout Radio')); assert(!cat.stations.some(x=>/SomaFM/i.test(x.n))); 
 const store=create({quran:'paused'});let called=0;const off=store.subscribe(s=>{called++;assert.equal(s.quran,'playing');});store.set({quran:'playing'});off();store.set({quran:'stopped'});assert.equal(called,1);
 for(const asset of ['catalog','ui','network','state'])assert(fs.readFileSync(path.join(root,'index.html'),'utf8').includes('core/'+asset+'.js'));
 console.log('PASS: catalog, UI helpers, shared state, script imports');

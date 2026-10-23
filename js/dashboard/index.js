@@ -27,7 +27,7 @@
     nightTo:   parseInt(q.nightTo   || "6", 10)
   };
 
-  var BUILD = "2026-10-22.v19.3";           // bump on every release (used by the update check)
+  var BUILD = "2026-10-23.v19.6";           // bump on every release (used by the update check)
   var RETRY_MS = 5 * 60 * 1000;         // retry failed fetches every 5 minutes
   var ALERTABLE = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"];
   var PRAYER_NAMES = ["Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"];
@@ -297,73 +297,75 @@
   function fmtInt(n) { return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ","); }
   var OZ_G = 31.1034768;   // grams in a troy ounce
 
+  function rateDateMs(value) {
+    if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return NaN;
+    return Date.parse(value + "T00:00:00Z");
+  }
+  function fxFresh(fx) {
+    if (!fx || !(fx.rate > 0)) return false;
+    var age = Date.now() - rateDateMs(fx.date);
+    return isFinite(age) && age >= -86400000 && age < 72 * 3600000;
+  }
   function renderFX(fx) {
     var el = $("fx");
     if (!CFG.fx || !fx || !(fx.rate > 0)) { el.hidden = true; renderGold(null); return; }
+    var fresh = fxFresh(fx);
     var html = '<span class="pair">' + esc(fx.from) + "/" + esc(fx.to) + "</span>" + fx.rate.toFixed(2);
-    if (typeof fx.prev === "number") {
+    if (typeof fx.prev === "number" && fresh) {
       var diff = fx.rate - fx.prev;
-      var arrow = diff > 0.004 ? "▲" : (diff < -0.004 ? "▼" : "–");
-      html += '<span class="chg">' + arrow + " " + Math.abs(diff).toFixed(2) + "</span>";
+      html += '<span class="chg">' + (diff > 0.004 ? "▲" : diff < -0.004 ? "▼" : "–") + " " + Math.abs(diff).toFixed(2) + "</span>";
     }
+    html += '<span class="fx-source" title="Rate date and provider">' + (fresh ? "" : "⚠ STALE · ") +
+      esc(fx.date || "unknown date") + " · " + esc(fx.source || "cached") + "</span>";
     el.innerHTML = html;
     el.hidden = false;
     renderGold(fx);
   }
-
-  // gold per gram in the local currency: spot price from the same rates file (24k), 21k = 21/24 of it
   function renderGold(fx) {
     var el = $("gold");
     if (!CFG.gold || !fx || !(fx.oz > 0)) { el.hidden = true; return; }
     var g24 = fx.oz / OZ_G, g21 = g24 * 21 / 24;
-    var html = '<span class="pair">Gold/g</span>' +
-      '<span class="karat">21k</span>' + fmtInt(g21) + '<span class="sepd">·</span>' +
-      '<span class="karat">24k</span>' + fmtInt(g24);
-    if (fx.ozPrev > 0) {
-      var d = (fx.oz - fx.ozPrev) / OZ_G * 21 / 24;
-      html += '<span class="chg">' + (d > 0.5 ? "▲" : (d < -0.5 ? "▼" : "–")) + " " + fmtInt(Math.abs(d)) + "</span>";
-    }
-    el.innerHTML = html;
-    el.hidden = false;
+    var html = '<span class="pair">Gold/g</span><span class="karat">21k</span>' + fmtInt(g21) +
+      '<span class="sepd">·</span><span class="karat">24k</span>' + fmtInt(g24);
+    if (!fxFresh(fx)) html += '<span class="fx-source">⚠ STALE</span>';
+    el.innerHTML = html; el.hidden = false;
   }
-
   function fetchFX() {
     if (!CFG.fx) return Promise.resolve();
     var f = CFG.from.toLowerCase(), t = CFG.to.toLowerCase();
+    var last = load("fx");
+    // Never fetch faster than every 6 hours, even after reloads or network reconnects.
+    var lastAttempt = +(load("fx_last_attempt") || 0);
+    if (Date.now() - lastAttempt < 6 * 3600000) return Promise.resolve();
+    store("fx_last_attempt", Date.now());
     var jsd = "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@";
-    function pick(j) {
+    function pick(j, source) {
       var rate = j && j[f] && j[f][t];
       if (typeof rate !== "number" || !(rate > 0)) throw new Error("bad rate");
-      var xau = j[f].xau, oz = (typeof xau === "number" && xau > 0) ? rate / xau : 0;   // price of 1 troy oz in the local currency
-      return { rate: rate, date: j.date || null, oz: oz };
+      var xau = j[f].xau;
+      return {rate:rate, date:j.date, source:source, oz:(xau > 0 ? rate / xau : 0)};
     }
+    function valid(cur) { if (!fxFresh(cur)) throw new Error("outdated FX source"); return cur; }
     function latest() {
-      return getJSON(jsd + "latest/v1/currencies/" + f + ".json").then(pick)
-        .catch(function () {
-          return getJSON("https://latest.currency-api.pages.dev/v1/currencies/" + f + ".json").then(pick);
-        })
-        .catch(function () {
-          return getJSON("https://open.er-api.com/v6/latest/" + CFG.from).then(function (j) {
-            var r = j && j.rates && j.rates[CFG.to];
-            if (typeof r !== "number" || !(r > 0)) throw new Error("bad rate");
-            var x = j.rates.XAU;
-            return { rate: r, date: null, oz: (typeof x === "number" && x > 0) ? r / x : 0 };
-          });
-        });
+      return getJSON(jsd + "latest/v1/currencies/" + f + ".json").then(function(j) { return valid(pick(j,"jsDelivr daily")); })
+      .catch(function() { return getJSON("https://latest.currency-api.pages.dev/v1/currencies/" + f + ".json").then(function(j) {return valid(pick(j,"currency-api daily"));}); })
+      .catch(function() { return getJSON("https://open.er-api.com/v6/latest/" + CFG.from).then(function(j) {
+        var rate = j && j.rates && j.rates[CFG.to];
+        if (!(rate > 0) || !j.time_last_update_utc) throw new Error("bad rate or update time");
+        var ts = Date.parse(j.time_last_update_utc);
+        if (!isFinite(ts)) throw new Error("bad source time");
+        var date = new Date(ts).toISOString().slice(0,10);
+        return valid({rate:rate,date:date,source:"open.er-api",oz:j.rates.XAU > 0 ? rate/j.rates.XAU : 0});
+      }); });
     }
-    return latest().then(function (cur) {
-      if (!cur.date) return cur;
-      var d = new Date(cur.date + "T00:00:00Z");
-      d.setUTCDate(d.getUTCDate() - 1);
-      var ds = d.getUTCFullYear() + "-" + pad(d.getUTCMonth() + 1) + "-" + pad(d.getUTCDate());
-      return getJSON(jsd + ds + "/v1/currencies/" + f + ".json").then(function (p) {
-        try { var pk = pick(p); cur.prev = pk.rate; cur.ozPrev = pk.oz; } catch (e) {}
-        return cur;
-      }).catch(function () { return cur; });
-    }).then(function (fx) {
-      fx.from = CFG.from; fx.to = CFG.to;
-      store("fx", fx);
-      renderFX(fx);
+    return latest().then(function(cur) {
+      // Previous-day lookup only once per accepted snapshot; no extra fetch on a stale response.
+      cur.from = CFG.from; cur.to = CFG.to;
+      if (last && last.date !== cur.date && last.rate > 0) {cur.prev=last.rate;cur.ozPrev=last.oz;}
+      store("fx",cur);renderFX(cur);
+    }).catch(function(err) {
+      if (last) renderFX(last);
+      if (typeof logDiag === "function") logDiag("fx", "source unavailable or stale");
     });
   }
 
@@ -399,6 +401,10 @@
       "&timezonestring=" + encodeURIComponent(CFG.tz);
   }
 
+  window.DashboardTodayFajr = function () {
+    var d = new Date(), row = prayerDays[dmy(d)];
+    return row && row.t && row.t.Fajr ? atTime(d, row.t.Fajr).getTime() : null;
+  };
   function fetchMonth(y, m) {
     return getJSON("https://api.aladhan.com/v1/calendar/" + y + "/" + m + "?" + prayerParams()).then(function (r) {
       var out = {}, n = 0;
@@ -692,6 +698,7 @@
       alertTimer = setTimeout(hideAlert, 60000);
       return;
     }
+    if (window.DashboardAzkar && window.DashboardAzkar.isPlaying()) window.DashboardAzkar.stop();
     if (R && R.playing) { R.resumeAfter = true; R.want = false; try { ra.pause(); } catch (e00) {} R.playing = false; rUI(); }
     if (Q && Q.playing) { Q.resumeAfter = true; try { qa.pause(); } catch (e0) {} Q.playing = false; qUI(); }
     showAlert(title, sub, "Stop", "stop");
@@ -1224,6 +1231,13 @@
       }
       else if (qc === "surah" && w[2] >= 1 && w[2] <= 114) { qStartSura(+w[2]); ack = "quran: surah " + w[2] + needsTapNote(); }
       else if (qc === "sleep" && w[2] !== undefined) { qSleep(w[2] === "end" ? "end" : String(+w[2] || 0)); ack = "quran sleep timer: " + w[2]; }
+    } else if (c === "azkar") {
+      var ac = w[1], az = window.DashboardAzkar;
+      if (!az) ack = "azkar unavailable";
+      else if (ac === "play") { az.play(); ack = "azkar playing (may need a tap on the iPad)"; }
+      else if (ac === "pause") { az.pause(); ack = "azkar paused"; }
+      else if (ac === "stop") { az.stop(); ack = "azkar stopped"; }
+      else if (ac === "open") { az.open(); ack = "azkar opened"; }
     } else if (c === "radio") {
       var rc = w[1], wo = text.trim().split(/\s+/);
       if (rc === "play") { if (w[2] >= 1 && w[2] <= rList().length) R.st = +w[2] - 1; rPlay(); ack = "radio: " + rList()[R.st].n + needsTapNote(); }
@@ -1506,6 +1520,7 @@
     qUI();
   }
   function qPlay() {
+    if (window.DashboardAzkar && window.DashboardAzkar.isPlaying()) window.DashboardAzkar.stop();
     if (R && R.active) rStop();
     qLoadData(function () {
       Q.active = true;
@@ -1763,6 +1778,7 @@
     setTimeout(function () { R.switching = false; }, 500);
   }
   function rPlay(i) {
+    if (window.DashboardAzkar && window.DashboardAzkar.isPlaying()) window.DashboardAzkar.stop();
     if (Q && Q.active) qStop();
     if (i != null) { R.st = i; rPersist(); }
     R.active = true; R.want = true; R.needTap = false; R.err = ""; R.tries = 0; R.server = 0; R.bad[R.st] = false; R.resumeAfter = false; rClearTimer();
@@ -1774,6 +1790,7 @@
     try { ra.pause(); ra.removeAttribute("src"); ra.load(); } catch (e) {}
     rUI();
   }
+  window.DashboardStopRadio = rStop;
   function rToggle() { if (R.playing || (R.want && !R.needTap)) rPause(); else rPlay(); }
   function rSleep(v) {
     R.sleepAt = 0; R.sleepV = String(v);
@@ -1952,7 +1969,7 @@
   setInterval(tickPrayer, 15000);
 
   addJob("weather", fetchWeather, 30 * 60 * 1000).run();
-  if (CFG.fx) addJob("rates", fetchFX, 60 * 60 * 1000).run();
+  if (CFG.fx) addJob("rates", fetchFX, 6 * 60 * 60 * 1000).run();
   if (CFG.prayer) { prayerJob = addJob("prayer times", fetchPrayer, 6 * 60 * 60 * 1000); prayerJob.run(); }
 
   // offline start: cache the page (and adhan files) with a service worker

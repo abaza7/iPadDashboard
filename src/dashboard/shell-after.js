@@ -59,7 +59,7 @@
   setInterval(tickPrayer, 15000);
 
   addJob("weather", fetchWeather, 30 * 60 * 1000).run();
-  if (CFG.fx) addJob("rates", fetchFX, 60 * 60 * 1000).run();
+  if (CFG.fx) addJob("rates", fetchFX, 6 * 60 * 60 * 1000).run();
   if (CFG.prayer) { prayerJob = addJob("prayer times", fetchPrayer, 6 * 60 * 60 * 1000); prayerJob.run(); }
 
   // offline start: cache the page (and adhan files) with a service worker

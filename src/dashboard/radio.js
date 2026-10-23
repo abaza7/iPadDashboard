@@ -33,6 +33,7 @@
     setTimeout(function () { R.switching = false; }, 500);
   }
   function rPlay(i) {
+    if (window.DashboardAzkar && window.DashboardAzkar.isPlaying()) window.DashboardAzkar.stop();
     if (Q && Q.active) qStop();
     if (i != null) { R.st = i; rPersist(); }
     R.active = true; R.want = true; R.needTap = false; R.err = ""; R.tries = 0; R.server = 0; R.bad[R.st] = false; R.resumeAfter = false; rClearTimer();
@@ -44,6 +45,7 @@
     try { ra.pause(); ra.removeAttribute("src"); ra.load(); } catch (e) {}
     rUI();
   }
+  window.DashboardStopRadio = rStop;
   function rToggle() { if (R.playing || (R.want && !R.needTap)) rPause(); else rPlay(); }
   function rSleep(v) {
     R.sleepAt = 0; R.sleepV = String(v);

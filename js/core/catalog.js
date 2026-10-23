@@ -8,10 +8,10 @@ root.DashboardCatalog = {
     ["Islam Sobhi", "https://cdn.mp3quran.net/download/audio/islam-sobhi/r1/", "islam-sobhi"]],
  stations: [
     { n: "Chillhop · Flux FM", s: "Chillhop", d: "Lofi hip-hop beats", u: "https://streams.fluxfm.de/Chillhop/mp3-128/streams.fluxfm.de/" },
-    { n: "Groove Salad · SomaFM", s: "Groove Salad", d: "Downtempo chill", u: "https://ice5.somafm.com/groovesalad-128-mp3", alt: "https://ice6.somafm.com/groovesalad-128-mp3" },
-    { n: "Fluid · SomaFM", s: "Fluid", d: "Instrumental hip-hop", u: "https://ice5.somafm.com/fluid-128-mp3", alt: "https://ice2.somafm.com/fluid-128-mp3" },
-    { n: "Lush · SomaFM", s: "Lush", d: "Mellow vocals", u: "https://ice5.somafm.com/lush-128-mp3", alt: "https://ice6.somafm.com/lush-128-mp3" },
-    { n: "Drone Zone · SomaFM", s: "Drone Zone", d: "Ambient, for sleep", u: "https://ice5.somafm.com/dronezone-128-mp3", alt: "https://ice2.somafm.com/dronezone-128-mp3" },
+    { n: "Chillout Radio · Flux FM", s: "Chillout Radio", d: "Downtempo chill", u: "https://channels.fluxfm.de/chillout-radio/externalembedflxhp/stream.mp3" },
+    { n: "Electronic Chillout · Flux FM", s: "Electronic Chillout", d: "Downtempo electronic", u: "https://channels.fluxfm.de/electronic-chillout/externalembedflxhp/stream.mp3" },
+    { n: "Yoga Sounds · Flux FM", s: "Yoga Sounds", d: "Calm ambient", u: "https://channels.fluxfm.de/externalembedflxhp/yoga-sounds/stream.mp3" },
+    { n: "Cosmic Jazz · Flux FM", s: "Cosmic Jazz", d: "Relaxed jazz", u: "https://streams.fluxfm.de/Cosmic/mp3-128/streams.fluxfm.de/" },
     { n: "Code Radio", s: "Code Radio", d: "Beats to focus", u: "https://coderadio-admin-v2.freecodecamp.org/listen/coderadio/radio.mp3" },
     { n: "Radio Paradise Mellow", s: "Paradise Mellow", d: "Soft mix", u: "https://stream.radioparadise.com/mellow-128" },
     { n: "Chillsynth · Nightride FM", s: "Chillsynth", d: "Chill synthwave", u: "https://stream.nightride.fm/chillsynth.mp3" }
