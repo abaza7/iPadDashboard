@@ -35,10 +35,10 @@
 </div>
 
 <input type="file" id="settingsFile" accept="application/json,.json" hidden>
-<div class="corner" id="corner"><button class="chip" id="chip" type="button"></button><button class="qbtn" id="qbtn" type="button" aria-label="Quran player"></button><button class="qbtn" id="azbtn" type="button" aria-label="Morning Azkar">☀</button><button class="qbtn" id="rbtn" type="button" aria-label="Lofi radio"></button></div>
+<div class="corner" id="corner"><button class="chip" id="chip" type="button"></button><button class="qbtn" id="qbtn" type="button" aria-label="Quran player"></button><button class="qbtn" id="azbtn" type="button" aria-label="Morning Azkar"><svg viewBox="0 0 24 24" width="23" height="23" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18h18M6 14a6 6 0 0 1 12 0M12 4v2M4.5 7l1.7 1.7M19.5 7l-1.7 1.7M3 14h2M19 14h2"/></svg></button><button class="qbtn" id="rbtn" type="button" aria-label="Lofi radio"></button></div>
 <div class="qmini rmini" id="rmini" hidden><button class="pb" id="rmPlay" type="button" aria-label="Play or pause"></button><div class="tx" id="rmOpen"><b id="rmT"></b><small id="rmS"></small></div></div>
 <div class="qmini" id="qmini" hidden><button class="pb" id="qmPlay" type="button" aria-label="Play or pause"></button><div class="tx" id="qmOpen"><b id="qmT"></b><small id="qmS"></small></div><button class="qstopmini" id="qmStop" type="button" aria-label="Stop Quran and close player">&#215;</button><div class="mv qa" id="qmV"></div><div class="bar"><i id="qmBar"></i></div></div>
-<div class="status" id="status"></div>
+<div class="fx-modal" id="fx-modal" hidden role="dialog" aria-modal="true" aria-labelledby="fx-modal-title"><div class="fx-modal-card"><div class="fx-modal-head"><h2 id="fx-modal-title">Market data details</h2><button class="fx-modal-close" id="fx-modal-close" aria-label="Close">×</button></div><div id="fx-modal-body"></div></div></div><div class="status" id="status"></div>
 <div class="toast" id="toast" hidden></div>
 
 <div class="panel" id="panel" hidden><div class="card" id="card"></div></div>

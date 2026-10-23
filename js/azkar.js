@@ -1,5 +1,5 @@
-/* Morning Azkar v19.6. Phrase-synchronized browser speech; uploaded recordings show text unless cues are provided. */
-(function () { 'use strict';
+/* v19.7 — Morning Azkar: native per-dhikr recordings with matching text; full reciter tracks unsynchronized. */
+(function(){'use strict';
 var entries = [
   'آية الكرسي: اللَّهُ لَا إِلَٰهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ، لَا تَأْخُذُهُ سِنَةٌ وَلَا نَوْمٌ، لَهُ مَا فِي السَّمَاوَاتِ وَمَا فِي الْأَرْضِ، مَنْ ذَا الَّذِي يَشْفَعُ عِنْدَهُ إِلَّا بِإِذْنِهِ، يَعْلَمُ مَا بَيْنَ أَيْدِيهِمْ وَمَا خَلْفَهُمْ، وَلَا يُحِيطُونَ بِشَيْءٍ مِنْ عِلْمِهِ إِلَّا بِمَا شَاءَ، وَسِعَ كُرْسِيُّهُ السَّمَاوَاتِ وَالْأَرْضَ، وَلَا يَئُودُهُ حِفْظُهُمَا، وَهُوَ الْعَلِيُّ الْعَظِيمُ.',
   'قُلْ هُوَ اللَّهُ أَحَدٌ، اللَّهُ الصَّمَدُ، لَمْ يَلِدْ وَلَمْ يُولَدْ، وَلَمْ يَكُنْ لَهُ كُفُوًا أَحَدٌ.',
@@ -10,63 +10,74 @@ var entries = [
   'رَضِيتُ بِاللَّهِ رَبًّا، وَبِالْإِسْلَامِ دِينًا، وَبِمُحَمَّدٍ صَلَّى اللَّهُ عَلَيْهِ وَسَلَّمَ نَبِيًّا.',
   'اللَّهُمَّ إِنِّي أَسْأَلُكَ الْعَفْوَ وَالْعَافِيَةَ فِي الدُّنْيَا وَالْآخِرَةِ.'
 ];
-var doc=document, state={index:0,playing:false,paused:false,mode:'voice',token:0,cues:[],url:null,audio:null,blob:null}, synth=window.speechSynthesis;
-function el(id){return doc.getElementById(id);} function node(tag,cl,txt){var n=doc.createElement(tag);if(cl)n.className=cl;if(txt)n.textContent=txt;return n;}
-var overlay=node('div','az-overlay');overlay.id='az-overlay';overlay.hidden=true;
-var card=node('div','az-card');overlay.appendChild(card);
-var head=node('div','az-head');head.appendChild(node('h2','', '☀ أذكار الصباح — Morning Azkar'));
-var close=node('button','', 'Close');head.appendChild(close);card.appendChild(head);
-var list=node('div','az-entries');list.id='az-list';card.appendChild(list);
-entries.forEach(function(txt,i){var row=node('div','az-entry',txt);row.id='az-entry-'+i;row.setAttribute('tabindex','0');row.addEventListener('click',function(){stop();state.index=i;render();});row.appendChild(node('small','',String(i+1)+' / '+entries.length));list.appendChild(row);});
-var hint=node('div','az-hint','Voice mode reads each text entry aloud and highlights it. Uploaded MP3 uses exact highlighting only with a matching cue file.');card.appendChild(hint);
-var controls=node('div','az-controls');card.appendChild(controls);
-var mode=node('select');[['voice','Arabic device voice'],['file','Uploaded MP3']].forEach(function(pair){var o=node('option','',pair[1]);o.value=pair[0];mode.appendChild(o);});controls.appendChild(mode);
-var file=node('input');file.type='file';file.accept='audio/*';file.setAttribute('aria-label','Upload Azkar audio');controls.appendChild(file);
-var cues=node('input');cues.type='file';cues.accept='.json,application/json';cues.setAttribute('aria-label','Upload timing cues JSON');controls.appendChild(cues);
-var prev=node('button','', '◀ Previous'), play=node('button','az-primary','▶ Play'),next=node('button','', 'Next'),stopBtn=node('button','', '■ Stop');
-[prev,play,next,stopBtn].forEach(function(b){controls.appendChild(b);});
-var status=node('span','az-status','Ready');controls.appendChild(status);
-var scheduleLabel=node('label','', 'Play 10 min after Fajr (while dashboard is awake)');
-var scheduleCheck=node('input');scheduleCheck.type='checkbox';scheduleCheck.checked=localStorage.getItem('dash_azkar_schedule')==='1';scheduleLabel.insertBefore(scheduleCheck,scheduleLabel.firstChild);card.appendChild(scheduleLabel);scheduleLabel.style.cssText='padding:10px 22px;font:400 .82rem system-ui;display:flex;align-items:center;gap:9px';
-scheduleCheck.addEventListener('change',function(){try{localStorage.setItem('dash_azkar_schedule',scheduleCheck.checked?'1':'0');}catch(e){}});
-
-var mini=node('div','az-mini');mini.id='az-mini';mini.hidden=true;var miniOpen=node('button','', '☀ Morning Azkar'),miniStop=node('button','', '■ Stop');mini.appendChild(miniOpen);mini.appendChild(miniStop);
-doc.body.appendChild(overlay);doc.body.appendChild(mini);
-function render(){for(var i=0;i<entries.length;i++){var row=el('az-entry-'+i);row.className='az-entry'+(i===state.index&&state.playing?' active':'');}play.textContent=state.playing&&!state.paused?'Ⅱ Pause':'▶ Play';status.textContent=(state.playing?(state.paused?'Paused':'Playing'):'Ready')+' · '+(state.index+1)+'/'+entries.length;mini.hidden=!state.playing;file.hidden=mode.value!=='file';cues.hidden=mode.value!=='file';if(state.playing){var active=el('az-entry-'+state.index);if(active&& !overlay.hidden)active.scrollIntoView({block:'nearest'});}}
-function stop(){state.token++;if(synth){try{synth.cancel();}catch(e){}}if(state.audio){state.audio.pause();}state.playing=false;state.paused=false;render();}
-function audioConflict(){// Existing players are stopped through their own user-facing controls where available.
- var qs=el('qmStop');if(qs&& !el('qmini').hidden) qs.click();
- // For radio the runtime keeps an internal player; v19.6 provides a stop hook there.
- if(window.DashboardStopRadio)window.DashboardStopRadio();
+var items=entries.map(function(s,i){return {text:s,count:1,audio:'',id:i+1};});
+var sources=[
+ {id:'hisn',label:'Hisnul Muslim — per-dhikr audio (synchronized)'},
+ {id:'mishary',label:'Mishary Alafasy — full recording (reading only)',url:'https://archive.org/download/makkah-live.-net-athkar-01/MakkahLive.Net_athkar_03.mp3'},
+ {id:'fares',label:'Fares Abbad — full recording (reading only)',url:'https://archive.org/download/makkah-live.-net-athkar-01/MakkahLive.Net_athkar_05.mp3'},
+ {id:'jibril',label:'Muhammad Jibril — full recording (reading only)',url:'https://archive.org/download/makkah-live.-net-athkar-01/MakkahLive.Net_athkar_07.mp3'}
+];
+var root=document,playing=false,paused=false,position=0,repeated=0,loaded=false,audio=new Audio(), activeUrl='',token=0;
+audio.preload='none';
+function el(id){return root.getElementById(id);}function n(tag,c,t){var e=root.createElement(tag);if(c)e.className=c;if(t)e.textContent=t;return e;}
+var backdrop=n('div','az-overlay');backdrop.id='az-overlay';backdrop.hidden=true;
+var card=n('div','az-card');backdrop.appendChild(card);
+var heading=n('div','az-head'),headingLabel=n('h2','', 'أذكار الصباح — Morning Azkar');heading.appendChild(headingLabel);
+var close=n('button','','Close');heading.appendChild(close);card.appendChild(heading);
+var selector=n('select','az-audio-selector');sources.forEach(function(src){var op=n('option','',src.label);op.value=src.id;selector.appendChild(op);});
+var hint=n('div','az-source-note','The Hisnul Muslim collection matches each recording to the displayed dhikr. Other reciters offer full-length recordings: text is readable but not time-synchronized.');card.appendChild(hint);
+var list=n('div','az-entries');list.id='az-list';card.appendChild(list);
+var controls=n('div','az-controls');card.appendChild(controls);controls.appendChild(selector);
+var prev=n('button','','◀ Previous'),play=n('button','az-primary','▶ Play'),next=n('button','','Next'),stopBtn=n('button','','■ Stop');
+[prev,play,next,stopBtn].forEach(function(x){controls.appendChild(x);});
+var status=n('span','az-status','Choose a recording');controls.appendChild(status);
+var schedule=n('label','','Play 10 min after Fajr (while dashboard is awake)'),check=n('input');check.type='checkbox';
+try{check.checked=localStorage.getItem('dash_azkar_schedule')==='1';}catch(e){}
+schedule.insertBefore(check,schedule.firstChild);schedule.style.cssText='padding:10px 22px;font:400 .82rem Jost,system-ui;display:flex;align-items:center;gap:9px';card.appendChild(schedule);
+check.addEventListener('change',function(){try{localStorage.setItem('dash_azkar_schedule',check.checked?'1':'0');}catch(e){}});
+var mini=n('div','az-mini');mini.hidden=true;var miniOpen=n('button','','Morning Azkar'),miniStop=n('button','','■ Stop');mini.appendChild(miniOpen);mini.appendChild(miniStop);
+root.body.appendChild(backdrop);root.body.appendChild(mini);
+function draw(){list.textContent='';items.forEach(function(item,i){var row=n('div','az-entry'+(playing&&selector.value==='hisn'&&position===i?' active':''),item.text);row.dir='rtl';row.appendChild(n('small','',(i+1)+' / '+items.length+(item.count>1?' · Repeat ×'+item.count:'')));
+row.addEventListener('click',function(){stop();position=i;draw();});list.appendChild(row);});
+play.textContent=playing&&!paused?'Ⅱ Pause':'▶ Play';mini.hidden=!playing;
+status.textContent=(playing?(paused?'Paused':'Playing'):'Ready')+' · '+(selector.value==='hisn'?(position+1)+'/'+items.length:'Full recording');
+if(playing&&selector.value==='hisn'&&!backdrop.hidden){var row=list.children[position];if(row)row.scrollIntoView({block:'nearest'});}}
+function stop(){++token;audio.pause();playing=false;paused=false;repeated=0;draw();}
+function conflict(){var q=el('qmStop');if(q&&el('qmini')&&!el('qmini').hidden)q.click();if(window.DashboardStopRadio)window.DashboardStopRadio();}
+function selected(){return sources.filter(function(s){return s.id===selector.value;})[0];}
+function playTrack(){if(!playing||paused)return;var src=selected(),target=src.id==='hisn'?(items[position]&&items[position].audio):src.url;
+if(!target){status.textContent='Recording unavailable — try a different source';stop();status.textContent='Recording unavailable — try a different source';return;}
+if(activeUrl!==target){audio.src=target;activeUrl=target;audio.load();}
+var current=token;audio.play().then(function(){if(current===token)draw();}).catch(function(){if(current===token){stop();status.textContent='Could not play stream; check internet or select another source';}});draw();}
+function start(){conflict();stop();playing=true;paused=false;draw();playTrack();}
+audio.addEventListener('ended',function(){if(!playing)return;
+if(selector.value!=='hisn'){stop();return;}
+var count=Math.max(1,Math.min(100,+(items[position]&&items[position].count)||1));
+if(++repeated<count){audio.currentTime=0;playTrack();return;}
+repeated=0;if(position<items.length-1){position++;draw();playTrack();}else stop();});
+audio.addEventListener('error',function(){if(playing){stop();status.textContent='Stream unavailable; select another source';}});
+play.addEventListener('click',function(){if(!playing){start();return;}if(paused){paused=false;audio.play().catch(function(){stop();});draw();}else{paused=true;audio.pause();draw();}});
+prev.addEventListener('click',function(){if(selector.value==='hisn'){stop();position=Math.max(0,position-1);start();}else{audio.currentTime=0;}});
+next.addEventListener('click',function(){if(selector.value==='hisn'){stop();position=Math.min(items.length-1,position+1);start();}else{audio.currentTime=0;}});
+stopBtn.addEventListener('click',stop);selector.addEventListener('change',function(){stop();position=0;draw();});
+close.addEventListener('click',function(){backdrop.hidden=true;});backdrop.addEventListener('click',function(e){if(e.target===backdrop)backdrop.hidden=true;});
+miniOpen.addEventListener('click',function(){backdrop.hidden=false;draw();});miniStop.addEventListener('click',stop);
+el('azbtn').addEventListener('click',function(){backdrop.hidden=false;draw();});
+// Load text and matching per-dhikr audio from a published Hisnul Muslim dataset.
+// Content is handled as untrusted input, never injected as HTML.
+var catalog='https://raw.githubusercontent.com/SalehGNUTUX/GT_HISNMUSLIM/main/hisnmuslim.json';
+fetch(catalog).then(function(r){if(!r.ok)throw Error('catalog status '+r.status);return r.json();}).then(function(data){
+ var chapters=Array.isArray(data)?data:(Array.isArray(data.data)?data.data:[]);
+ var ch=chapters.filter(function(x){return x&&/أذكار الصباح/.test(x.category||'')&&Array.isArray(x.array);})[0];
+ if(!ch||!ch.array.length)throw Error('Morning chapter missing');
+ var converted=ch.array.filter(function(x){return x&&typeof x.text==='string'&&/^https:\/\//.test(x.audio||'');}).map(function(x,i){return {id:x.id||i+1,text:x.text,audio:x.audio,count:Math.max(1,Math.min(100,+x.count||1))};});
+ if(!converted.length)throw Error('No individual recordings');items=converted;loaded=true;draw();
+}).catch(function(){status.textContent='Recorded collection unavailable; reading text remains available';});
+function checkSchedule(){if(!check.checked||playing||!window.DashboardTodayFajr)return;
+var fajr=window.DashboardTodayFajr();if(!fajr)return;var target=fajr+600000,now=Date.now(),key='dash_azkar_last_schedule',today=new Date(target).toDateString();
+try{if(now>=target&&now<target+120000&&localStorage.getItem(key)!==today){localStorage.setItem(key,today);start();}}catch(e){}
 }
-function speak(){var token=state.token; if(!state.playing || state.paused || state.mode!=='voice')return;
- if(!synth || !window.SpeechSynthesisUtterance){status.textContent='Arabic speech unavailable on this iPad';stop();return;}
- var u=new SpeechSynthesisUtterance(entries[state.index]);u.lang='ar-SA';u.rate=0.88;
- var voices=synth.getVoices();for(var k=0;k<voices.length;k++)if(/^ar([-_]|$)/i.test(voices[k].lang)){u.voice=voices[k];break;}
- u.onend=function(){if(token!==state.token||!state.playing||state.paused)return;if(state.index<entries.length-1){state.index++;render();speak();}else stop();};
- u.onerror=function(){if(token===state.token){status.textContent='Speech failed; choose an Arabic system voice or upload MP3';state.playing=false;render();}};
- try{synth.speak(u);}catch(e){stop();status.textContent='Audio could not start';}
-}
-function updateCue(){if(!state.audio||!state.playing||state.mode!=='file')return;
- var current=state.audio.currentTime;for(var i=0;i<state.cues.length;i++)if(current>=state.cues[i].start&&current<state.cues[i].end){if(state.index!==i){state.index=i;render();}break;}}
-function start(){audioConflict();state.token++;state.playing=true;state.paused=false;state.mode=mode.value;
- if(state.mode==='voice'){if(state.audio)state.audio.pause();try{synth.cancel();}catch(e){}render();speak();}
- else{if(!state.audio||!state.url){stop();status.textContent='Please upload an MP3 first';return;}state.audio.currentTime=0;state.audio.play().catch(function(){stop();status.textContent='Tap Play to enable audio';});render();}}
-play.addEventListener('click',function(){if(!state.playing){start();return;}if(state.paused){state.paused=false;if(state.mode==='voice')speak();else state.audio.play().catch(function(){});render();return;}state.paused=true;state.token++;if(state.mode==='voice')synth.cancel();else state.audio.pause();render();});
-prev.addEventListener('click',function(){stop();state.index=Math.max(0,state.index-1);start();});next.addEventListener('click',function(){stop();state.index=Math.min(entries.length-1,state.index+1);start();});stopBtn.addEventListener('click',stop);
-mode.addEventListener('change',function(){stop();render();});file.addEventListener('change',function(){if(state.url)URL.revokeObjectURL(state.url);state.blob=file.files&&file.files[0];if(!state.blob)return;state.url=URL.createObjectURL(state.blob);state.audio=new Audio(state.url);state.audio.addEventListener('timeupdate',updateCue);state.audio.addEventListener('ended',stop);status.textContent='Audio ready (text sync requires cues)';});
-cues.addEventListener('change',function(){var f=cues.files&&cues.files[0];if(!f)return;var r=new FileReader();r.onload=function(){try{var val=JSON.parse(r.result);if(!Array.isArray(val)||val.length!==entries.length)throw Error();var end=0;val.forEach(function(c){if(!Number.isFinite(c.start)||!Number.isFinite(c.end)||c.start<end||c.end<=c.start)throw Error();end=c.end;});state.cues=val;status.textContent='Timed text synchronization loaded';}catch(e){state.cues=[];status.textContent='Invalid cues: expected one {start,end} entry per Azkar text';}};r.readAsText(f);});
-close.addEventListener('click',function(){overlay.hidden=true;});overlay.addEventListener('click',function(e){if(e.target===overlay)overlay.hidden=true;});miniOpen.addEventListener('click',function(){overlay.hidden=false;render();});miniStop.addEventListener('click',stop);
-el('azbtn').addEventListener('click',function(){overlay.hidden=false;render();});
-// Stop Azkar if adhan overlay becomes active; never interrupt adhan.
-setInterval(function(){var alert=el('alert');if(state.playing&&alert&&!alert.hidden)stop();},1000);
-function startFromRemote(){if(!overlay.hidden){start();}else{overlay.hidden=false;start();}}
-function pauseFromRemote(){if(state.playing&&!state.paused)play.click();}
-function checkSchedule(){if(!scheduleCheck.checked||state.playing||!window.DashboardTodayFajr)return;
- var fajr=window.DashboardTodayFajr();if(!fajr)return;var target=fajr+10*60000,now=Date.now();
- var key='dash_azkar_last_schedule',today=new Date(target).toDateString();
- if(now>=target&&now<target+120000&&localStorage.getItem(key)!==today){try{localStorage.setItem(key,today);}catch(e){} startFromRemote();}}
-setInterval(checkSchedule,30000);
-window.DashboardAzkar={stop:stop,play:startFromRemote,pause:pauseFromRemote,open:function(){overlay.hidden=false;render();},isPlaying:function(){return state.playing;}};
-render();
+setInterval(checkSchedule,30000);setInterval(function(){var alert=el('alert');if(playing&&alert&&!alert.hidden)stop();},1000);
+window.DashboardAzkar={stop:stop,play:function(){backdrop.hidden=false;start();},pause:function(){if(playing&&!paused)play.click();},open:function(){backdrop.hidden=false;draw();},isPlaying:function(){return playing;}};
+draw();
 })();

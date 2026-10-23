@@ -1,0 +1,17 @@
+'use strict';
+const fs=require('fs'),assert=require('assert'),path=require('path');
+const root=path.resolve(__dirname,'..');const read=p=>fs.readFileSync(path.join(root,p),'utf8');
+const source=read('src/dashboard/shell-before.js'), html=read('index.html'),css=read('css/index.css'),az=read('js/azkar.js');
+assert(source.includes('function openFinanceDetails('));
+assert(source.includes('id === "gold"') || source.includes('type === "gold"'));
+assert(source.includes('fx_last_attempt')&&source.includes('6 * 3600000'));
+assert(!source.includes('Rate date and provider'));
+assert(html.includes('id="fx-modal"')&&css.includes('.fx-modal[hidden]'));
+assert(html.includes('id="azbtn"')&&html.includes('viewBox="0 0 24 24"'));
+assert(source.includes('data-a="manual-reload"')&&source.includes('a === "manual-reload"'));
+assert(az.includes('raw.githubusercontent.com/SalehGNUTUX/GT_HISNMUSLIM'));
+assert(az.includes('items[position].audio')&&az.includes('selected()'));
+assert(az.includes('Mishary Alafasy')&&az.includes('Fares Abbad')&&az.includes('Muhammad Jibril'));
+assert(az.includes('isPlaying:function(){return playing;}'));
+assert(read('sw.js').includes('ipad-dashboard-v19.7'));
+console.log('PASS: v19.7 finance modal, manual reload, source-grounded Azkar choices and SVG icon');

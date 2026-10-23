@@ -16,7 +16,7 @@ fail=true;assert.equal(st.write("prefs",1),false);fail=false;
 assert.equal(st.remove("prefs"),true);assert.equal(st.read("prefs"),null);
 const html=fs.readFileSync(path.join(root,"index.html"),"utf8"),sw=fs.readFileSync(path.join(root,"sw.js"),"utf8");
 assert(html.indexOf("js/core/storage.js")>html.indexOf("js/core/shared.js"));assert(html.indexOf("js/core/storage.js")<html.indexOf("js/dashboard/index.js"));
-assert(sw.includes("js/core/storage.js"));assert(sw.includes("ipad-dashboard-v19.6"));
+assert(sw.includes("js/core/storage.js"));assert(sw.includes("ipad-dashboard-v19.7"));
 const dashboard=fs.readFileSync(path.join(root,"js/dashboard/index.js"),"utf8");
 assert(dashboard.includes("DashboardStorage.write(k, v)"));assert(dashboard.includes("DashboardStorage.read(k)"));
 assert(dashboard.includes("DashboardComponents.settingsRow('Export or restore preferences'"));

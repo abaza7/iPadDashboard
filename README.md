@@ -642,7 +642,7 @@ Requires the appropriate Playwright/Python and Chromium dependencies. In previou
 - **Clearer messages:** the iPad's remote status shows when ntfy.sh's limit is paused sending, and the phone explains when it was opened with an old pairing link that has no security key.
 
 
-## v19.6 – FX, Radio and Morning Azkar
+## v19.7 – FX, Radio and Morning Azkar
 - v19.4 FluxFM alternatives replace all built-in SomaFM entries. Your custom stations remain.
 - FX provider fetch attempts are capped to one attempt per six hours **across page reloads**, including failed attempts. A daily rate dated more than 72 hours ago is rejected; cached values are clearly labeled `STALE`. Gold from a cached FX snapshot is also marked stale. A manual dashboard data refresh does not override this six-hour cap. These are daily/reference feeds, **not live interbank FX quotes**.
 - Tap the ☀ corner button for **Morning Azkar**. Built-in Arabic device speech speaks one displayed dhikr at a time and highlights the current section. Arabic speech availability and pronunciation depend on the iPad's installed voices; it is not a recorded reciter.
@@ -650,3 +650,12 @@ Requires the appropriate Playwright/Python and Chromium dependencies. In previou
 - Optional checkbox schedules Azkar 10 minutes after Fajr, based on current dashboard prayer data. This is **best-effort only** while the dashboard is awake; iPadOS will not guarantee unattended audio.
 - Phone remote adds `azkar play`, `azkar pause`, `azkar stop`, `azkar open` using the existing authenticated protocol and ntfy traffic limits.
 - Quran, radio and adhan are not mixed with Azkar playback.
+
+
+## v19.7 — Finance overlay, Azkar recordings, manual reload
+- Finance chips restored to compact appearance. Tap USD/EGP or Gold to open a modal overlay with freshness, provider, and date. Opening it never calls the FX service; the existing 6-hour request cap remains.
+- Morning Azkar now uses a community Hisnul Muslim text + per-entry audio collection for accurate entry-level synchronization; streaming availability requires access to raw.githubusercontent.com and hisnmuslim.com. It can fail: the original eight text entries remain readable offline but will not pretend to have associated recorded clips when the catalog is unavailable.
+- Different full-recording reciters (Mishary Alafasy, Fares Abbad, Muhammad Jibril) are selectable, but **their whole-recording audio is not synchronized with individual lines**. The app explicitly says so. Recordings are hosted on Archive.org and may be unavailable in some regions.
+- Azkar uses an outlined sunrise SVG rather than an emoji.
+- Settings includes a manual Reload button with confirmation while media is active. Reload can require tapping iPad again to unlock audio.
+- No changes to radio presets, existing pairing, FX frequency, or visual layout outside the requested controls.

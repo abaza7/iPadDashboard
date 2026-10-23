@@ -27,7 +27,7 @@
     nightTo:   parseInt(q.nightTo   || "6", 10)
   };
 
-  var BUILD = "2026-10-23.v19.6";           // bump on every release (used by the update check)
+  var BUILD = "2026-10-23.v19.7";           // bump on every release (used by the update check)
   var RETRY_MS = 5 * 60 * 1000;         // retry failed fetches every 5 minutes
   var ALERTABLE = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"];
   var PRAYER_NAMES = ["Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"];
@@ -315,8 +315,7 @@
       var diff = fx.rate - fx.prev;
       html += '<span class="chg">' + (diff > 0.004 ? "▲" : diff < -0.004 ? "▼" : "–") + " " + Math.abs(diff).toFixed(2) + "</span>";
     }
-    html += '<span class="fx-source" title="Rate date and provider">' + (fresh ? "" : "⚠ STALE · ") +
-      esc(fx.date || "unknown date") + " · " + esc(fx.source || "cached") + "</span>";
+
     el.innerHTML = html;
     el.hidden = false;
     renderGold(fx);
@@ -327,9 +326,31 @@
     var g24 = fx.oz / OZ_G, g21 = g24 * 21 / 24;
     var html = '<span class="pair">Gold/g</span><span class="karat">21k</span>' + fmtInt(g21) +
       '<span class="sepd">·</span><span class="karat">24k</span>' + fmtInt(g24);
-    if (!fxFresh(fx)) html += '<span class="fx-source">⚠ STALE</span>';
+
     el.innerHTML = html; el.hidden = false;
   }
+  function openFinanceDetails(type) {
+    var fx = load("fx"), dialog = $("fx-modal"), body = $("fx-modal-body");
+    if (!fx || !fx.rate || !dialog || !body) return;
+    var fresh = fxFresh(fx), value = type === "gold" ?
+      (fx.oz > 0 ? "21k " + fmtInt(fx.oz / OZ_G * 21 / 24) + " · 24k " + fmtInt(fx.oz / OZ_G) : "Not available") :
+      fx.rate.toFixed(2) + " " + fx.to;
+    var rows = [["Value", value], ["Freshness", fresh ? "Fresh (daily reference)" : "STALE — cached rate"],
+      ["Provider", fx.source || "Unknown"], ["Rate date", fx.date || "Not provided"],
+      ["Last checked", load("fx_last_attempt") ? new Date(+load("fx_last_attempt")).toLocaleString() : "Not recorded"],
+      ["Update frequency", "At most once every 6 hours"]];
+    body.innerHTML = rows.map(function(r){return '<div class="fx-modal-detail"><span>'+esc(r[0])+'</span><b>'+esc(String(r[1]))+'</b></div>';}).join("");
+    dialog.hidden=false;
+    $("fx-modal-close").focus();
+  }
+  ["fx", "gold"].forEach(function (id) {
+    var e=$(id);e.setAttribute("tabindex","0");e.setAttribute("role","button");e.setAttribute("aria-label","Show "+(id==="fx"?"exchange rate":"gold price")+" details");
+    e.addEventListener("click",function(){openFinanceDetails(id);});
+    e.addEventListener("keydown",function(ev){if(ev.key==="Enter"||ev.key===" "){ev.preventDefault();openFinanceDetails(id);}});
+  });
+  $("fx-modal-close").addEventListener("click",function(){ $("fx-modal").hidden=true; });
+  $("fx-modal").addEventListener("click",function(e){if(e.target===$("fx-modal"))$("fx-modal").hidden=true;});
+  document.addEventListener("keydown",function(e){if(e.key==="Escape"&&!$("fx-modal").hidden)$("fx-modal").hidden=true;});
   function fetchFX() {
     if (!CFG.fx) return Promise.resolve();
     var f = CFG.from.toLowerCase(), t = CFG.to.toLowerCase();
@@ -804,6 +825,7 @@
       h += '<div class="sec">Update</div><div class="srow"><div class="sl"><b>A new version is ready</b><small>The app reloads. Afterwards tap the screen once to re-enable adhan sound.</small></div>' +
         '<div class="sb"><button class="btn pri" type="button" data-a="apply">Update now</button></div></div>';
     }
+    h += '<div class="sec">Dashboard</div><div class="srow"><div class="sl"><b>Reload dashboard</b><small>Reload this page. Audio may require another tap afterwards; saved preferences and pairing are preserved.</small></div><div class="sb"><button class="btn" type="button" data-a="manual-reload">Reload</button></div></div>';
     h += '<div class="sec">Theme</div><div class="pills">';
     [["boho", "Boho (auto day/night)"], ["boho-light", "Boho light"], ["boho-dark", "Dark boho"], ["midnight", "Midnight"]].forEach(function (th) {
       h += '<button class="sw' + (themePref === th[0] ? " on" : "") + '" type="button" data-a="theme" data-v="' + th[0] + '">' + th[1] + "</button>";
@@ -880,6 +902,10 @@
     var a = t.getAttribute("data-a"), n = t.getAttribute("data-n"), s = t.getAttribute("data-s");
     if (a === "backup-export") exportSettings();
     else if (a === "backup-import") $("settingsFile").click();
+    else if (a === "manual-reload") {
+      var active = (typeof Q !== "undefined" && Q.active) || (typeof R !== "undefined" && R.playing) || (window.DashboardAzkar && window.DashboardAzkar.isPlaying()) || ($("alert") && !$('alert').hidden);
+      if (!active || window.confirm("Reload the dashboard? Audio will stop and may require a tap to enable again.")) location.reload();
+    }
     else if (a === "close") closePanel();
     else if (a === "tog") {
       alerts[n] = !alerts[n]; store("alerts", alerts);
