@@ -2,7 +2,7 @@
 const assert=require("node:assert/strict"),fs=require("node:fs"),path=require("node:path"),cp=require("node:child_process");
 const root=path.resolve(__dirname,"..");
 const source=name=>fs.readFileSync(path.join(root,"src/dashboard",name),"utf8");
-const ordered=["shell-before.js","quran.js","radio.js","shell-after.js"];
+const ordered=["shell-before.js","quran.js","radio.js","context.js","shell-after.js"];
 const original=fs.readFileSync(path.join(root,"js/dashboard/index.js"),"utf8");
 assert.equal(ordered.map(source).join(""),original,"Generated dashboard does not match sources");
 assert(source("quran.js").includes("function qStop()"));

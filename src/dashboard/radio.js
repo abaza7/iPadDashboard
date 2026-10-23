@@ -93,16 +93,16 @@
     if (typeof publishDashboardState === "function") publishDashboardState(false);
     var b = $("rbtn"), m = $("rmini"), st = rCur();
     b.innerHTML = ICON.note; b.className = "qbtn" + (R.active ? " on" : "");
-    document.body.classList.toggle("qon", !!(Q.active || R.active));
-    document.body.classList.toggle("ron", !!R.active);
+    document.body.classList.toggle("qon", MINI_PLAYERS && !!(Q.active || R.active));
+    document.body.classList.toggle("ron", MINI_PLAYERS && !!R.active);
     updateStatus();
-    if (!R.active) { m.hidden = true; positionMini(); rPanelLive(); return; }
-    m.hidden = false;
+    if (!R.active) { m.hidden = true; positionMini(); rPanelLive(); cxRender(); return; }
+    m.hidden = !MINI_PLAYERS;
     $("rmPlay").innerHTML = (R.playing || (R.want && !R.needTap)) ? ICON.pause : ICON.play;
     var parts = st.n.split(" · ");
     $("rmT").innerHTML = '<span class="rs">' + esc(parts[0]) + '</span>' + (parts[1] ? '<span class="rl"> · ' + esc(parts[1]) + "</span>" : "");
     $("rmS").innerHTML = rSubHTML(true);
-    positionMini(); rPanelLive();
+    positionMini(); rPanelLive(); cxRender();
   }
   function rSleepLabel() { return R.sleepAt ? "Stops in " + Math.max(1, Math.ceil((R.sleepAt - Date.now()) / 60000)) + " min" : ""; }
   function rPanelLive() {

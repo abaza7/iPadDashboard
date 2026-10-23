@@ -1,3 +1,7 @@
+  // v19.9: the Quran/radio controls live in the weather arch (context.js). Set to true to bring the old bottom mini players back.
+  var MINI_PLAYERS = false;
+  var CX = { cur: null, queue: [], until: 0, verseKey: "", mode: "", nKey: "" };   // context-arch state (see context.js)
+  var CX_NOTE_MS = 12000;
   // ---------- Quran player: verse-by-verse audio from everyayah.com, text bundled in quran-data.js ----------
   var ICON = {
     gear: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',
@@ -215,17 +219,17 @@
     if (typeof publishDashboardState === "function") publishDashboardState(false);
     var b = $("qbtn"), m = $("qmini");
     b.innerHTML = ICON.book; b.className = "qbtn" + (Q.active ? " on" : "");
-    document.body.classList.toggle("qon", !!(Q.active || (R && R.active)));
+    document.body.classList.toggle("qon", MINI_PLAYERS && !!(Q.active || (R && R.active)));
     updateStatus();
-    if (!Q.active || !window.QDATA) { m.hidden = true; document.body.classList.remove("qv"); positionMini(); qPanelLive(); return; }
-    m.hidden = false;
-    document.body.classList.toggle("qv", Q.verses && !qNoVerse());
+    if (!Q.active || !window.QDATA) { m.hidden = true; document.body.classList.remove("qv"); positionMini(); qPanelLive(); cxRender(); return; }
+    m.hidden = !MINI_PLAYERS;
+    document.body.classList.toggle("qv", MINI_PLAYERS && Q.verses && !qNoVerse());
     $("qmPlay").innerHTML = Q.playing ? ICON.pause : ICON.play;
     $("qmT").innerHTML = esc(QDATA.s[Q.sura - 1][1]) + ' <span class="qa">· ' + esc(QDATA.s[Q.sura - 1][0]) + "</span>";
     $("qmS").textContent = Q.err || (Q.needTap ? "Tap ▶ to start the sound" : QREC[Q.rec][0] + " · " + (qNoVerse() ? "streaming" : Q.a === 0 ? "Bismillah" : Q.a + "/" + qCount(Q.sura)));
     $("qmV").textContent = Q.verses && !qNoVerse() ? qText(Q.sura, Q.a) : "";
     $("qmBar").style.width = Math.round(qPos() * 100) + "%";
-    positionMini(); qPanelLive(); qReadFill();
+    positionMini(); qPanelLive(); qReadFill(); cxRender();
   }
   function qSleepLabel() {
     if (Q.sleepEnd) return "Stops at the end of the surah";

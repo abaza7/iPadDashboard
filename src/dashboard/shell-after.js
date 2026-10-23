@@ -33,6 +33,7 @@
   applyTheme();
   updateChip();
   qUI();
+  cxRender();
   loadSounds();
 
   renderClock();
@@ -50,6 +51,7 @@
     maybeWeekly(d);
     qTick();
     rTick();
+    cxTick();
     if (dmy(d) !== lastDay) {          // new day: rebuild rows from cache, then refresh
       lastDay = dmy(d);
       buildPrayer();

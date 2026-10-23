@@ -3,7 +3,7 @@ from pathlib import Path
 import subprocess,zipfile,sys
 root=Path(__file__).resolve().parent.parent
 subprocess.run(['node','tools/release.js'],cwd=root,check=True)
-output=Path(sys.argv[1]).resolve() if len(sys.argv)>1 else root.parent/'iPadDashboard_v19.4.zip'
+output=Path(sys.argv[1]).resolve() if len(sys.argv)>1 else root.parent/'iPadDashboard_v19.9.zip'
 exclude={'.git','.github','__pycache__','.pytest_cache'}
 with zipfile.ZipFile(output,'w',compression=zipfile.ZIP_DEFLATED) as z:
     for p in sorted(root.rglob('*')):

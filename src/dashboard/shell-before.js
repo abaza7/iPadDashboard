@@ -27,7 +27,7 @@
     nightTo:   parseInt(q.nightTo   || "6", 10)
   };
 
-  var BUILD = "2026-10-23.v19.8";           // bump on every release (used by the update check)
+  var BUILD = "2026-10-23.v19.9";           // bump on every release (used by the update check)
   var RETRY_MS = 5 * 60 * 1000;         // retry failed fetches every 5 minutes
   var ALERTABLE = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"];
   var PRAYER_NAMES = ["Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"];
@@ -265,6 +265,7 @@
     $("wMeta").innerHTML = "<span>Feels " + temp(c.apparent_temperature) + " \u00B7 Humidity " + Math.round(c.relative_humidity_2m) +
       '%</span><span class="sep"> \u00B7 </span><span>Wind ' + Math.round(c.wind_speed_10m) + (CFG.units === "f" ? " mph" : " km/h") + "</span>";
 
+    if (typeof cxBadge === "function") cxBadge();
     var f = $("forecast");
     f.innerHTML = "";
     var dly = w.daily;
@@ -1358,15 +1359,10 @@
     var fresh = force || Date.now() - e.t < 180000;
     if (!fresh) return;
     nUnread++; updateChip();
-    if (p >= 5 && $("alert").hidden) {
-      wakeUntil = Date.now() + 60000; sleepForced = false; renderClock();
-      showAlert(nIcon(e) + " " + (e.title || "Urgent notification"), e.msg, "Dismiss", "close");
-      alertTimer = setTimeout(hideAlert, 10 * 60 * 1000);
-      playChime();
-    } else {
-      if (p >= 4) { wakeUntil = Date.now() + 60000; renderClock(); playChime(); }
-      nToast(e);
-    }
+    // v19.9: every notification appears in the weather arch for 12 s (same time and behaviour for all priorities)
+    wakeUntil = Math.max(wakeUntil, Date.now() + (p >= 4 ? 60000 : 15000)); sleepForced = false; renderClock();
+    if (p >= 4) playChime();
+    cxNotify(e);
   }
   function nClose() { if (nES) { try { nES.close(); } catch (e) {} nES = null; } }
   function nReset() { nClose(); nSince = 0; nErr = ""; nState = nTopics.length ? "connecting" : "off"; if (nTopics.length) { nConnect(); setTimeout(nPoll, 1500); } }

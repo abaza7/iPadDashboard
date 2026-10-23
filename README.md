@@ -661,6 +661,10 @@ Requires the appropriate Playwright/Python and Chromium dependencies. In previou
 - No changes to radio presets, existing pairing, FX frequency, or visual layout outside the requested controls.
 
 
+## v19.9 — Weather arch with context states
+
+See `RELEASE_NOTES_v19.9.md`. Source of the new behaviour: `src/dashboard/context.js` (built into `js/dashboard/index.js` by `node tools/build.js`), styles at the end of `css/index.css`.
+
 ## v19.8 — USD/EGP provider update
 
 USD/EGP now comes from exchangerate.dev `GET /v1/latest/{base}?symbols={quote}`. The endpoint is anonymous, so no API key is embedded in this public static dashboard. Requests are capped at one every six hours, persisted in local storage, including failures. Each quote is validated against its per-currency `effective_at` observation time, `stale`, and market-session data. Old cached rates remain visible as stale rather than being relabeled current. The finance details overlay shows source and observation timestamp. Gold conversion continues to use a separate daily currency cross; failed gold fetches never cause an old USD/EGP rate to overwrite the newer quote. External API reachability and iPadOS Safari CORS still require on-device verification. The API provides indicative rates rather than bank execution prices.

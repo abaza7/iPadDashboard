@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Remote check</title>
+<style>
+body{font:17px/1.45 -apple-system,Helvetica,Arial,sans-serif;background:#231a17;color:#f3e7d8;margin:0;padding:16px}
+h1{font-size:22px;margin:0 0 4px}.s{color:#b9a898;margin:0 0 14px;font-size:15px}
+button{font:inherit;padding:12px 18px;border-radius:14px;border:0;background:#e0905a;color:#231a17;font-weight:600}
+.r{margin:10px 0;padding:10px 12px;border-radius:12px;background:#33261f;word-break:break-word}
+.ok b{color:#9fd08a}.bad b{color:#ff8a7a}.warn b{color:#f0c070}
+pre{white-space:pre-wrap;background:#1a120f;border-radius:12px;padding:10px;font-size:14px}
+</style></head><body>
+<h1>Remote check</h1>
+<p class="s">Open this page on the phone <b>and</b> on the iPad (in Safari), tap Run, and send me a screenshot of each.</p>
+<button id="go" type="button">Run checks</button>
+<div id="out"></div><pre id="sum"></pre>
+<script>
+(function () {
+  var out = document.getElementById("out"), sum = document.getElementById("sum"), lines = [];
+  function row(cls, label, text) { var d = document.createElement("div"); d.className = "r " + cls; d.innerHTML = "<b>" + label + "</b> " + text; out.appendChild(d); lines.push(label + ": " + text.replace(/<[^>]+>/g, "")); sum.textContent = lines.join("\n"); }
+  function T(ms, p) { return Promise.race([p, new Promise(function (_, rej) { setTimeout(function () { rej(new Error("timed out after " + ms / 1000 + " s")); }, ms); })]); }
+  function hdr(r) { var o = []; ["retry-after", "x-ratelimit-limit", "x-ratelimit-remaining", "x-ratelimit-reset"].forEach(function (k) { var v = r.headers.get(k); if (v) o.push(k + "=" + v); }); return o.join(", "); }
+  function run() {
+    out.innerHTML = ""; lines = []; sum.textContent = "";
+    var topic = "chk-" + Math.random().toString(36).slice(2, 12), t0 = Date.now(), serverTime = 0;
+    row("warn", "Device", (navigator.standalone ? "Home Screen app" : "Safari") + " · online=" + navigator.onLine + " · secure context=" + window.isSecureContext + " · crypto.subtle=" + !!(window.crypto && crypto.subtle) + " · EventSource=" + !!window.EventSource);
+    T(10000, fetch("https://ntfy.sh/v1/health", { cache: "no-store" })).then(function (r) { return r.text().then(function (t) { row(r.ok ? "ok" : "bad", "1. Reach ntfy.sh", "HTTP " + r.status + " " + t.slice(0, 80) + " " + hdr(r)); }); },
+      function (e) { row("bad", "1. Reach ntfy.sh", "FAILED: " + e.message + " — this network or a blocker (VPN, DNS filter, content blocker) stops ntfy.sh."); })
+    .then(function () { return T(10000, fetch("https://ntfy.sh/" + topic, { method: "POST", body: "check " + t0 })); })
+    .then(function (r) {
+      return r.text().then(function (t) {
+        var j = {}; try { j = JSON.parse(t); } catch (e) {} serverTime = j.time || 0;
+        row(r.ok ? "ok" : "bad", "2. Publish a message", "HTTP " + r.status + (r.status === 429 ? " — RATE LIMITED. ntfy.sh is refusing messages from this internet connection (daily free quota used up). It recovers slowly over hours." : "") + " " + hdr(r) + (r.ok ? "" : " " + t.slice(0, 120)));
+        if (serverTime) { var d = Math.round(Date.now() / 1000 - serverTime); row(Math.abs(d) < 120 ? "ok" : "bad", "3. Clock vs ntfy.sh", "this device is " + d + " s " + (d >= 0 ? "ahead" : "behind") + (Math.abs(d) >= 120 ? " — clock is wrong; set date & time to automatic" : "")); }
+      });
+    }, function (e) { row("bad", "2. Publish a message", "FAILED: " + e.message); })
+    .then(function () { return T(10000, fetch("https://ntfy.sh/" + topic + "/json?poll=1&since=2m")); })
+    .then(function (r) { return r.text().then(function (t) { var n = t.split("\n").filter(Boolean).length; row(r.ok && n ? "ok" : "bad", "4. Read it back (poll)", "HTTP " + r.status + ", " + n + " message(s) found " + hdr(r)); }); },
+      function (e) { row("bad", "4. Read it back (poll)", "FAILED: " + e.message); })
+    .then(function () {
+      return new Promise(function (res) {
+        if (!window.EventSource) { row("bad", "5. Live stream (SSE)", "not supported"); return res(); }
+        var es = new EventSource("https://ntfy.sh/" + topic + "/sse"), done = false, ts = Date.now();
+        function fin(cls, txt) { if (done) return; done = true; try { es.close(); } catch (e) {} row(cls, "5. Live stream (SSE)", txt); res(); }
+        es.onopen = function () { fin("ok", "opened in " + (Date.now() - ts) + " ms"); };
+        es.onerror = function () { setTimeout(function () { fin("bad", "could not open — the live stream is blocked or failing; the app falls back to polling every 60 s (slow)"); }, 1500); };
+        setTimeout(function () { fin("bad", "no response in 8 s"); }, 8000);
+      });
+    })
+    .then(function () { row("warn", "Done", "Screenshot this page for the next step."); });
+  }
+  document.getElementById("go").addEventListener("click", run);
+})();
+</script></body></html>
